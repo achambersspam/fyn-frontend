@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 dark:text-gray-100;
+  }
+
+  .dark body {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(88, 28, 135, 0.35), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(30, 64, 175, 0.35), transparent 40%),
+      radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.25), transparent 40%),
+      #0b0f1a;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary font-bold py-4 px-8 rounded-xl transition-all dark:border-slate-800 dark:text-gray-200 dark:hover:text-white;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 focus:border-primary focus:outline-none transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-gray-100;
+  }
+  
+  .tag-chip {
+    @apply px-4 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer;
+  }
+  
+  .tag-chip-selected {
+    @apply bg-primary text-white;
+  }
+  
+  .tag-chip-unselected {
+    @apply bg-white border-2 border-gray-200 text-gray-700 hover:border-primary dark:bg-slate-900 dark:border-slate-800 dark:text-gray-200;
+  }
+}
