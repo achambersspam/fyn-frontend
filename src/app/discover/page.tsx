@@ -28,7 +28,7 @@ const fallbackTrending = [
     tag: "Featured",
     category: "Environment",
   },
-];
+] as unknown as TrendingTopic[];
 
 const fallbackExplore = [
   {
@@ -46,9 +46,9 @@ const fallbackExplore = [
     title: "Motivational Quotes & Stories",
     description: "Uplifting quotes and short stories to boost your day.",
   },
-];
+] as unknown as TrendingTopic[];
 
-type CardIcon = React.ComponentType<{ size?: number; className?: string }>;
+type CardIcon = React.ComponentType<{ size?: number | string; className?: string }>;
 
 const iconMap = {
   Zap,
