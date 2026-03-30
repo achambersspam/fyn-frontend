@@ -1,42 +1,40 @@
+import { getCurrentSession } from "./supabase";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
 export type ApiError = {
   message: string;
   status?: number;
+  details?: unknown;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-const buildUrl = (path: string) => {
-  const normalizedBase = API_BASE_URL.endsWith("/")
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL;
-  return `${normalizedBase}${path.startsWith("/") ? path : `/${path}`}`;
+type RequestOptions = {
+  requireAuth?: boolean;
 };
 
-const getAuthToken = () => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
-};
-
-export const setAuthToken = (token: string | null) => {
-  if (typeof window === "undefined") return;
-  if (token) {
-    localStorage.setItem("auth_token", token);
-    document.cookie = `auth_token=${token}; path=/; max-age=604800; samesite=lax`;
-  } else {
-    localStorage.removeItem("auth_token");
-    document.cookie = "auth_token=; path=/; max-age=0; samesite=lax";
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  options: RequestOptions = {}
+): Promise<T> {
+  const requireAuth = options.requireAuth ?? true;
+  const session = await getCurrentSession();
+  if (requireAuth && !session?.access_token) {
+    throw {
+      message: "Session expired. Please log in again.",
+      status: 401,
+      details: { code: "SESSION_MISSING" },
+    } as ApiError;
   }
-};
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getAuthToken();
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
     credentials: "include",
@@ -44,13 +42,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let message = "Request failed";
+    let details: unknown;
     try {
       const body = await response.json();
-      if (body?.message) message = body.message;
+      if (body?.error) message = body.error;
+      else if (body?.message) message = body.message;
+      details = body?.details;
     } catch {
-      // ignore parse error
+      /* ignore parse error */
     }
-    throw { message, status: response.status } as ApiError;
+    throw { message, status: response.status, details } as ApiError;
   }
 
   if (response.status === 204) {
@@ -61,10 +62,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) }),
-  put: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "PUT", body: JSON.stringify(body ?? {}) }),
-  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  get: <T>(path: string, options?: RequestOptions) => request<T>(path, undefined, options),
+  post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    request<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) }, options),
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    request<T>(path, { method: "PUT", body: JSON.stringify(body ?? {}) }, options),
+  patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    request<T>(path, { method: "PATCH", body: JSON.stringify(body ?? {}) }, options),
+  delete: <T>(path: string, options?: RequestOptions) =>
+    request<T>(path, { method: "DELETE" }, options),
 };

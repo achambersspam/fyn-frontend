@@ -1,41 +1,21 @@
 "use client";
 
-import { Moon, Sun, SunMoon } from "lucide-react";
+import { Moon, Sun } from "@/components/Icons";
 import { useTheme } from "@/components/ThemeProvider";
+import { useEffect, useState } from "react";
 
-interface ThemeToggleProps {
-  variant?: "icon" | "pill";
-}
+export default function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-export default function ThemeToggle({ variant = "pill" }: ThemeToggleProps) {
-  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const icon =
-    theme === "light" ? (
-      <Sun size={18} />
-    ) : theme === "dark" ? (
-      <Moon size={18} />
-    ) : (
-      <SunMoon size={18} />
-    );
-
-  const label =
-    theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
-
-  if (variant === "icon") {
-    return (
-      <button
-        type="button"
-        onClick={toggleTheme}
-        aria-label={`Switch theme (current: ${label})`}
-        className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors dark:border-slate-800 dark:text-gray-300 dark:hover:text-white dark:hover:bg-slate-900"
-      >
-        {icon}
-      </button>
-    );
-  }
+  if (!mounted) return null;
 
   const isDark = resolvedTheme === "dark";
+  const label = isDark ? "Dark" : "Light";
 
   return (
     <button

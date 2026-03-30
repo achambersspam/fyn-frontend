@@ -1,63 +1,100 @@
-export type AuthResponse = {
-  token: string;
-};
+export type Tier = "basic" | "minimum" | "premium";
 
 export type Profile = {
-  name?: string;
-  email?: string;
-};
-
-export type Subscription = {
-  planName?: string;
-  description?: string;
-  statusLabel?: string;
-  renewalDate?: string;
-};
-
-export type NewsletterInput = {
-  title: string;
+  id: string;
   email: string;
-  topics: string[];
-  primaryGoal?: string;
-  customTopic?: string;
-  frequency?: string;
-  time?: string;
-  readTime?: number;
+  name?: string;
+  tier: Tier;
+  onboarding_complete: boolean;
+  subscription_status?: string;
+  timezone?: string;
+  created_at?: string;
+};
+
+export type NewsletterTopic = {
+  id?: string;
+  topic: string;
+  specific_details?: string;
+  allocated_seconds: number;
 };
 
 export type Newsletter = {
   id: string;
-  createdAt: string;
-  title: string;
-  topics: string[];
-  email?: string;
-  primaryGoal?: string;
-  customTopic?: string;
-  frequency?: string;
-  time?: string;
-  readTime?: number;
+  user_id?: string;
+  title?: string;
+  email: string;
+  topics: NewsletterTopic[];
+  primary_goal?: string;
+  frequency: string;
+  delivery_time: string;
+  timezone: string;
+  read_time_minutes: number;
+  paused: boolean;
+  next_send_at_utc?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
-export type LatestNewsletter = {
-  title: string;
-  deliveredAt?: string;
-  summary?: string;
-  body?: string;
+export type NewsletterCreatePayload = {
+  email: string;
+  topics: { topic: string; specific_details?: string; allocated_seconds: number }[];
+  primary_goal?: string;
+  frequency: string;
+  delivery_time: string;
+  timezone: string;
+  read_time_minutes: number;
 };
 
-export type DashboardData = {
-  userName?: string;
-  subtitle?: string;
-  newsletterTitle?: string;
-  newsletterUpdates?: string;
-  newsletterReadTime?: string;
-  marketTitle?: string;
-  marketSummary?: string;
-  marketTimestamp?: string;
+export type NewsletterUpdatePayload = Partial<NewsletterCreatePayload>;
+
+export type NewsletterIssue = {
+  id: string;
+  newsletter_id: string;
+  subject?: string;
+  body_html?: string;
+  body_text?: string;
+  delivered_at?: string;
+  generation_status?: "queued" | "generated" | "sent" | "failed";
+  scheduled_for_utc?: string;
+  is_first_issue?: boolean;
+};
+
+export type LatestNewsletter = NewsletterIssue;
+
+export type IssueSource = {
+  id: string;
+  issue_id: string;
+  topic_key: string;
+  source_name: string;
+  title: string;
+  url: string;
+  published_at?: string;
+};
+
+export type Achievement = {
+  current_streak: number;
+  longest_streak: number;
+  total_reads: number;
+  last_7_days: boolean[];
+};
+
+export type SubscriptionInfo = {
+  tier: Tier;
+  status: string;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
+};
+
+export type CheckoutResponse = {
+  url: string;
+};
+
+export type StripePortalPayload = {
+  action: "manage" | "cancel";
+  reason?: string;
 };
 
 export type TrendingTopic = {
-  iconKey?: "Zap" | "TrendingUp" | "Globe" | "BookOpen" | "Heart";
   title: string;
   description: string;
   tag: string;
@@ -65,7 +102,47 @@ export type TrendingTopic = {
 };
 
 export type ExploreTopic = {
-  iconKey?: "Zap" | "TrendingUp" | "Globe" | "BookOpen" | "Heart";
   title: string;
   description: string;
+};
+
+export const TIER_LIMITS: Record<
+  Tier,
+  {
+    maxNewsletters: number;
+    maxTopics: number;
+    maxReadTimeMin: number;
+    minReadTimeMin: number;
+    deliveryWindowStart: number;
+    deliveryWindowEnd: number;
+    incrementMinutes: number;
+  }
+> = {
+  basic: {
+    maxNewsletters: 1,
+    maxTopics: 6,
+    maxReadTimeMin: 10,
+    minReadTimeMin: 1,
+    deliveryWindowStart: 7,
+    deliveryWindowEnd: 18,
+    incrementMinutes: 60,
+  },
+  minimum: {
+    maxNewsletters: 2,
+    maxTopics: 6,
+    maxReadTimeMin: 12,
+    minReadTimeMin: 1,
+    deliveryWindowStart: 6,
+    deliveryWindowEnd: 21,
+    incrementMinutes: 30,
+  },
+  premium: {
+    maxNewsletters: Infinity,
+    maxTopics: Infinity,
+    maxReadTimeMin: 25,
+    minReadTimeMin: 1,
+    deliveryWindowStart: 5,
+    deliveryWindowEnd: 22,
+    incrementMinutes: 15,
+  },
 };

@@ -26,15 +26,13 @@ const getSystemTheme = () =>
   window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<ThemeMode>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === "light" || stored === "dark" || stored === "system") {
       setTheme(stored);
-    } else {
-      setTheme("system");
     }
   }, []);
 
@@ -68,6 +66,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({ theme, resolvedTheme, setTheme, toggleTheme }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [theme, resolvedTheme]
   );
 

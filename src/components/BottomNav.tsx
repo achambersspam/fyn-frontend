@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, BookOpen, Settings } from "lucide-react";
+import { Home, Compass, BookOpen, Settings } from "@/components/Icons";
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -10,7 +10,7 @@ export default function BottomNav() {
   const navItems = [
     { icon: Home, label: "HOME", path: "/dashboard" },
     { icon: Compass, label: "DISCOVER", path: "/discover" },
-    { icon: BookOpen, label: "MY NEWSLETTER", path: "/newsletters" },
+    { icon: BookOpen, label: "NEWSLETTER", path: "/newsletter" },
     { icon: Settings, label: "SETTINGS", path: "/settings" },
   ];
 
@@ -30,7 +30,9 @@ export default function BottomNav() {
               }`}
             >
               <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-              <span className={`text-xs font-bold ${isActive ? "font-black" : ""}`}>
+              <span
+                className={`text-xs font-bold ${isActive ? "font-black" : ""}`}
+              >
                 {label}
               </span>
             </Link>
