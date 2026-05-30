@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -192,38 +192,86 @@ export type Database = {
       newsletter_topics: {
         Row: {
           allocated_seconds: number
+          canonical_entity: string | null
           created_at: string
+          display_name: string | null
+          entity_type: string | null
           id: string
+          is_ambiguous: boolean | null
+          is_locked: boolean | null
+          league: string | null
           newsletter_id: string
+          provider: string | null
+          provider_team_code: string | null
+          provider_team_id: number | null
+          resolution_confidence: number | null
+          resolution_status: string | null
+          resolution_type: string | null
+          resolution_version: number | null
+          resolved_at: string | null
           sort_order: number
           specific_details: string | null
+          sport: string | null
           topic_key: string
           topic_label: string
           updated_at: string | null
+          user_input: string | null
           user_id: string
         }
         Insert: {
           allocated_seconds: number
+          canonical_entity?: string | null
           created_at?: string
+          display_name?: string | null
+          entity_type?: string | null
           id?: string
+          is_ambiguous?: boolean | null
+          is_locked?: boolean | null
+          league?: string | null
           newsletter_id: string
+          provider?: string | null
+          provider_team_code?: string | null
+          provider_team_id?: number | null
+          resolution_confidence?: number | null
+          resolution_status?: string | null
+          resolution_type?: string | null
+          resolution_version?: number | null
+          resolved_at?: string | null
           sort_order?: number
           specific_details?: string | null
+          sport?: string | null
           topic_key: string
           topic_label: string
           updated_at?: string | null
+          user_input?: string | null
           user_id: string
         }
         Update: {
           allocated_seconds?: number
+          canonical_entity?: string | null
           created_at?: string
+          display_name?: string | null
+          entity_type?: string | null
           id?: string
+          is_ambiguous?: boolean | null
+          is_locked?: boolean | null
+          league?: string | null
           newsletter_id?: string
+          provider?: string | null
+          provider_team_code?: string | null
+          provider_team_id?: number | null
+          resolution_confidence?: number | null
+          resolution_status?: string | null
+          resolution_type?: string | null
+          resolution_version?: number | null
+          resolved_at?: string | null
           sort_order?: number
           specific_details?: string | null
+          sport?: string | null
           topic_key?: string
           topic_label?: string
           updated_at?: string | null
+          user_input?: string | null
           user_id?: string
         }
         Relationships: [

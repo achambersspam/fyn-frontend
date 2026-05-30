@@ -8,6 +8,9 @@ import { api } from "@/lib/api";
 import type { Achievement } from "@/lib/apiContracts";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const BADGE_THRESHOLDS = [
+  2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140,
+];
 
 export default function AchievementsPage() {
   const router = useRouter();
@@ -28,6 +31,17 @@ export default function AchievementsPage() {
       })
       .finally(() => setIsLoading(false));
   }, []);
+  const badgeSlots =
+    data?.badges && data.badges.length > 0
+      ? data.badges
+      : BADGE_THRESHOLDS.map((threshold) => ({
+          id: `streak_${threshold}`,
+          threshold_days: threshold,
+          label: `${threshold}d`,
+          unlocked: (data?.unlocked_badges || []).includes(`streak_${threshold}`),
+          asset_url: null,
+          locked_asset_url: null,
+        }));
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-slate-950">
@@ -47,18 +61,19 @@ export default function AchievementsPage() {
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-6">
         {isLoading && (
-          <div className="bg-white rounded-2xl p-5 text-center border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
-            Loading achievements...
+          <div className="space-y-3">
+            <div className="h-24 rounded-2xl bg-white border border-gray-200 animate-pulse dark:bg-slate-900 dark:border-slate-800" />
+            <div className="h-24 rounded-2xl bg-white border border-gray-200 animate-pulse dark:bg-slate-900 dark:border-slate-800" />
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-5 text-center font-semibold dark:bg-red-950/30 dark:border-red-900/40 dark:text-red-200">
+          <div className="rounded-2xl p-5 text-center font-semibold bg-red-600 text-white">
             {error}
           </div>
         )}
 
-        {data && (
+        {!isLoading && data && (
           <>
             {/* Streak Card */}
             <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 text-center space-y-3">
@@ -117,6 +132,44 @@ export default function AchievementsPage() {
                 <p className="text-sm text-gray-500 font-semibold dark:text-gray-400">
                   Total Reads
                 </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4">
+              <h3 className="font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Trophy size={20} className="text-amber-500" />
+                Pigeon Badges
+              </h3>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                {badgeSlots.map((badge) => {
+                  const unlocked = badge.unlocked;
+                  const iconUrl = unlocked ? badge.asset_url : badge.locked_asset_url;
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`rounded-xl border p-3 text-center transition-all ${
+                        unlocked
+                          ? "border-sky-300 bg-sky-50 shadow-sm dark:border-sky-700 dark:bg-sky-950/30"
+                          : "border-gray-200 bg-gray-100 opacity-60 blur-[0.4px] dark:border-slate-700 dark:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex justify-center">
+                        {iconUrl ? (
+                          <img
+                            src={iconUrl}
+                            alt={badge.label}
+                            className="h-6 w-6 object-contain"
+                          />
+                        ) : (
+                          <div className="text-lg">{unlocked ? "🏅" : "🔒"}</div>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                        {badge.label}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>

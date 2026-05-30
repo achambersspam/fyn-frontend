@@ -1,38 +1,50 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Dependencies
+node_modules/
 
-# testing
-/coverage
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
+# Environment
+.env
+.env.local
 .env*.local
+.env.production
 
-# vercel
+# Stripe CLI
+.stripe-cli-config/
+
+# Playwright / test session artifacts
+.playwright-cli/
+screenshots/
+browser-screenshot-results.json
+browser-visible-checks.json
+
+# Session logs and launch test artifacts
+*.log
+*-session.log
+*.combined.log
+*.out.log
+*.err.log
+authenticated-launch-artifacts/
+launch-test-results.json
+stripe-launch-test-results.json
+
+# Generated validation/analysis reports
+scripts/reports/
+validation-summary*.json
+buttonActionLatencyAudit.json
+authenticated-launch-test-results.json
+authenticated-launch-test-report.json
+
+# Vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
 .cursor
-.env.local
-.next
-node_modules

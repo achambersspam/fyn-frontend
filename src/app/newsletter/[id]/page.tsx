@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "@/components/Icons";
+import * as Icons from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import type {
   Newsletter,
@@ -12,27 +13,35 @@ import type {
 import { TIER_LIMITS, type Tier } from "@/lib/apiContracts";
 import SaveNotification from "@/components/SaveNotification";
 import UnsavedChangesModal from "@/components/UnsavedChangesModal";
-import TopicPrioritySelector from "@/components/TopicPrioritySelector";
 import {
   allocateByPriority,
   inferPriorityFromSeconds,
 } from "@/lib/allocateByPriority";
 import {
-  DEFAULT_TOPIC_DETAIL_PLACEHOLDER,
-  TOPIC_DETAIL_PLACEHOLDERS,
   TOPIC_OPTIONS,
 } from "@/lib/topics/topicConfig";
+import {
+  DEFAULT_TIMEZONE_VALUE,
+  getTimezoneOptionByIana,
+  getTimezoneOptionByValue,
+  TIMEZONE_OPTIONS,
+} from "@/lib/timezones";
+import { validateTopicDetailsPreflight } from "@/lib/topics/validateTopicDetails";
+import { normalizeTopicDetailsForSave } from "@/lib/topics/normalizeTopicDetailsForSave";
+import TopicDetailEditor from "@/components/topic-details/TopicDetailEditor";
+import { trackEvent } from "@/lib/analytics";
 
 const FREQUENCIES = ["Daily", "Mon/Wed/Fri", "Weekly", "Bi-Weekly", "Monthly"];
-const TIMEZONE_OPTIONS = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Phoenix",
-  "America/Los_Angeles",
-  "America/Anchorage",
-  "Pacific/Honolulu",
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 7, label: "Sun" },
 ];
+const MONTH_DAY_OPTIONS = Array.from({ length: 31 }, (_, idx) => idx + 1);
 
 function generateTimeOptions(start: number, end: number, inc: number) {
   const t: string[] = [];
@@ -54,8 +63,12 @@ function formatTime(t: string) {
 }
 
 function roundToHalfMin(value: number): number {
-  return Math.round(value * 2) / 2;
+  return Math.round(value);
 }
+
+const INVALID_DETAILS_PAUSE_WARNING =
+  "We could not understand part of your newsletter details. If you leave this page, your newsletter will be fully paused until valid details are saved.";
+const SAVE_SLOW_THRESHOLD_MS = 1200;
 
 export default function EditNewsletterPage() {
   const router = useRouter();
@@ -68,8 +81,10 @@ export default function EditNewsletterPage() {
   const [topicPriorities, setTopicPriorities] = useState<Record<string, number>>({});
   const [readTimeMin, setReadTimeMin] = useState(3);
   const [frequency, setFrequency] = useState("Daily");
-  const [deliveryTime, setDeliveryTime] = useState("08:00");
-  const [timezone, setTimezone] = useState("America/New_York");
+  const [deliveryTime, setDeliveryTime] = useState("09:00");
+  const [scheduleWeekday, setScheduleWeekday] = useState<number>(1);
+  const [monthlyDayOfMonth, setMonthlyDayOfMonth] = useState<number>(1);
+  const [timezone, setTimezone] = useState<string>(DEFAULT_TIMEZONE_VALUE);
   const [email, setEmail] = useState("");
   const [nextSend, setNextSend] = useState<string | null>(null);
 
@@ -80,13 +95,26 @@ export default function EditNewsletterPage() {
   const [showSaved, setShowSaved] = useState(false);
   const [showUnsaved, setShowUnsaved] = useState(false);
   const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
+  const [hasInvalidDetailsState, setHasInvalidDetailsState] = useState(false);
+  const [showInvalidLeaveWarning, setShowInvalidLeaveWarning] = useState(false);
+  const [isPausingForExit, setIsPausingForExit] = useState(false);
   const [nearSendWarning, setNearSendWarning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
   const totalSeconds = readTimeMin * 60;
+  const selectedTopicPriorities = useMemo(
+    () =>
+      selectedTopics.reduce<Record<string, number>>((acc, topic) => {
+        acc[topic] = topicPriorities[topic] ?? 3;
+        return acc;
+      }, {}),
+    [selectedTopics, topicPriorities]
+  );
   const topicSeconds = useMemo(
-    () => allocateByPriority(totalSeconds, topicPriorities),
-    [totalSeconds, topicPriorities]
+    () => allocateByPriority(totalSeconds, selectedTopicPriorities),
+    [selectedTopicPriorities, totalSeconds]
   );
   const allocatedSum = useMemo(
     () => selectedTopics.reduce((s, t) => s + (topicSeconds[t] ?? 0), 0),
@@ -113,6 +141,8 @@ export default function EditNewsletterPage() {
         readTimeMin,
         frequency,
         deliveryTime,
+        scheduleWeekday,
+        monthlyDayOfMonth,
         timezone,
       }),
     [
@@ -122,6 +152,8 @@ export default function EditNewsletterPage() {
       readTimeMin,
       frequency,
       deliveryTime,
+      scheduleWeekday,
+      monthlyDayOfMonth,
       timezone,
     ]
   );
@@ -154,7 +186,7 @@ export default function EditNewsletterPage() {
         );
         const clampedDeliveryTime = timeOpts.includes(nl.delivery_time)
           ? nl.delivery_time
-          : timeOpts[0] ?? "08:00";
+          : timeOpts[0] ?? "09:00";
 
         const clampedReadTime = roundToHalfMin(
           Math.max(
@@ -172,7 +204,11 @@ export default function EditNewsletterPage() {
         }
         nl.topics.forEach((t) => {
           if (topics.includes(t.topic) && t.specific_details) {
-            dets[t.topic] = t.specific_details;
+            const nextDetails = t.specific_details.trim();
+            if (!nextDetails) return;
+            dets[t.topic] = dets[t.topic]
+              ? `${dets[t.topic]}; ${nextDetails}`
+              : nextDetails;
           }
         });
 
@@ -195,10 +231,10 @@ export default function EditNewsletterPage() {
         setTopicPriorities(prios);
         setReadTimeMin(clampedReadTime);
         setFrequency(nl.frequency);
+        setScheduleWeekday(nl.schedule_weekday ?? 1);
+        setMonthlyDayOfMonth(nl.monthly_day_of_month ?? 1);
         setDeliveryTime(clampedDeliveryTime);
-        setTimezone(
-          TIMEZONE_OPTIONS.includes(nl.timezone) ? nl.timezone : "America/New_York"
-        );
+        setTimezone(getTimezoneOptionByIana(nl.timezone)?.value || DEFAULT_TIMEZONE_VALUE);
         setEmail(nl.email ?? "");
         setNextSend(nl.next_send_at_utc ?? null);
 
@@ -209,9 +245,9 @@ export default function EditNewsletterPage() {
           readTimeMin: clampedReadTime,
           frequency: nl.frequency,
           deliveryTime: clampedDeliveryTime,
-          timezone: TIMEZONE_OPTIONS.includes(nl.timezone)
-            ? nl.timezone
-            : "America/New_York",
+          scheduleWeekday: nl.schedule_weekday ?? 1,
+          monthlyDayOfMonth: nl.monthly_day_of_month ?? 1,
+          timezone: getTimezoneOptionByIana(nl.timezone)?.value || DEFAULT_TIMEZONE_VALUE,
         });
         setSavedSnapshot(snap);
       })
@@ -225,51 +261,113 @@ export default function EditNewsletterPage() {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  const handleSave = useCallback(async () => {
+  useEffect(() => {
+    void router.prefetch("/dashboard");
+    void router.prefetch("/newsletter");
+    if (id) {
+      void router.prefetch(`/newsletter/${id}/read`);
+    }
+  }, [id, router]);
+
+  const isInvalidDetailsApiError = useCallback((msg: string, details: unknown) => {
+    const code =
+      details &&
+      typeof details === "object" &&
+      "code" in details &&
+      typeof (details as { code?: unknown }).code === "string"
+        ? String((details as { code: string }).code)
+        : "";
+    const lowered = msg.toLowerCase();
+    return (
+      code === "SPORT_RESOLUTION_REJECTED" ||
+      lowered.includes("could not recognize one or more teams") ||
+      lowered.includes("could not understand part of your newsletter details")
+    );
+  }, []);
+
+  const handleSave = useCallback(async (): Promise<boolean> => {
+    const saveStartedAt = performance.now();
     if (!id) {
       setError("Missing newsletter id.");
-      return;
+      return false;
     }
     if (selectedTopics.length === 0) {
+      void trackEvent("validation_error_seen", {
+        flow: "newsletter_edit",
+        reason: "no_topics_selected",
+      });
       setError("Select at least one topic.");
-      return;
+      return false;
     }
     if (
       limits.maxTopics !== Infinity &&
       selectedTopics.length > limits.maxTopics
     ) {
       setError(`Your ${tier} plan allows up to ${limits.maxTopics} topics.`);
-      return;
+      return false;
     }
     if (readTimeMin < limits.minReadTimeMin || readTimeMin > limits.maxReadTimeMin) {
       setError(
         `Read time must be between ${limits.minReadTimeMin} and ${limits.maxReadTimeMin} minutes for your plan.`
       );
-      return;
+      return false;
     }
     if (!timeOptions.includes(deliveryTime)) {
       setError("Delivery time is outside your plan's allowed schedule window.");
-      return;
+      return false;
+    }
+    const needsWeekday = frequency === "Weekly" || frequency === "Bi-Weekly";
+    const needsMonthlyDay = frequency === "Monthly";
+    if (needsWeekday) {
+      if (!Number.isInteger(scheduleWeekday) || scheduleWeekday < 1 || scheduleWeekday > 7) {
+        setError("Please choose one weekday for your selected frequency.");
+        return false;
+      }
+      if (tier !== "premium" && scheduleWeekday > 5) {
+        setError("Weekend delivery is only available for premium.");
+        return false;
+      }
+    }
+    if (needsMonthlyDay && (!Number.isInteger(monthlyDayOfMonth) || monthlyDayOfMonth < 1 || monthlyDayOfMonth > 31)) {
+      setError("Please choose a valid monthly day between 1 and 31.");
+      return false;
     }
     if (!allocationValid) {
       setError(`Allocations must sum to exactly ${totalSeconds}s.`);
-      return;
+      return false;
+    }
+    const detailsForValidation = selectedTopics.reduce<Record<string, string>>((acc, topic) => {
+      acc[topic] = normalizeTopicDetailsForSave(topic, topicDetails[topic]) || "";
+      return acc;
+    }, {});
+    const preflightIssues = validateTopicDetailsPreflight(detailsForValidation);
+    if (preflightIssues.length > 0) {
+      const firstIssue = preflightIssues[0];
+      void trackEvent("topic_detail_validation_failed", {
+        topic: firstIssue.topic,
+      });
+      setError(`${firstIssue.topic} details need a fix before saving. ${firstIssue.message}`);
+      setHasInvalidDetailsState(true);
+      return false;
     }
 
     setIsSaving(true);
     setError(null);
     setNearSendWarning(false);
 
+    const selectedTimezone = getTimezoneOptionByValue(timezone);
     const payload: NewsletterUpdatePayload = {
       email: email || undefined,
       topics: selectedTopics.map((t) => ({
         topic: t,
-        specific_details: topicDetails[t] || undefined,
+        specific_details: normalizeTopicDetailsForSave(t, topicDetails[t]),
         allocated_seconds: topicSeconds[t] ?? 20,
       })),
       frequency,
       delivery_time: deliveryTime,
-      timezone,
+      timezone: selectedTimezone?.iana || "America/New_York",
+      schedule_weekday: needsWeekday ? scheduleWeekday : undefined,
+      monthly_day_of_month: needsMonthlyDay ? monthlyDayOfMonth : undefined,
       read_time_minutes: readTimeMin,
     };
     const saveEndpoint = `/api/newsletters/${id}`;
@@ -287,8 +385,29 @@ export default function EditNewsletterPage() {
         },
       });
       await api.put(saveEndpoint, payload);
+      const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
+      if (process.env.NODE_ENV !== "production") {
+        console.log("UI_ACTION_TIMING", {
+          action: "save_newsletter",
+          duration_ms: saveDurationMs,
+          success: true,
+        });
+      }
+      if (saveDurationMs >= SAVE_SLOW_THRESHOLD_MS) {
+        void trackEvent("ui_action_timing", {
+          action: "save_newsletter",
+          duration_ms: saveDurationMs,
+          success: true,
+        });
+      }
+      void trackEvent("newsletter_updated", {
+        source: "newsletter_edit_page",
+        topic_count: selectedTopics.length,
+        frequency,
+      });
       setSavedSnapshot(currentSnapshot);
       setShowSaved(true);
+      setHasInvalidDetailsState(false);
 
       if (nextSend) {
         const diff =
@@ -297,6 +416,7 @@ export default function EditNewsletterPage() {
           setNearSendWarning(true);
         }
       }
+      return true;
     } catch (err: unknown) {
       const apiErr = err as ApiError;
       const details =
@@ -315,7 +435,21 @@ export default function EditNewsletterPage() {
         payload,
         error: err,
       });
+      setHasInvalidDetailsState(isInvalidDetailsApiError(msg, apiErr?.details));
+      const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
+      if (process.env.NODE_ENV !== "production") {
+        console.log("UI_ACTION_TIMING", {
+          action: "save_newsletter",
+          duration_ms: saveDurationMs,
+          success: false,
+        });
+      }
+      void trackEvent("validation_error_seen", {
+        flow: "newsletter_edit_save",
+        reason: "api_error",
+      });
       setError(msg);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -323,9 +457,11 @@ export default function EditNewsletterPage() {
     selectedTopics,
     topicDetails,
     topicSeconds,
-    topicPriorities,
+    selectedTopicPriorities,
     frequency,
     deliveryTime,
+    scheduleWeekday,
+    monthlyDayOfMonth,
     timezone,
     email,
     readTimeMin,
@@ -337,9 +473,19 @@ export default function EditNewsletterPage() {
     timeOptions,
     allocationValid,
     totalSeconds,
+    isInvalidDetailsApiError,
   ]);
 
+  const promptLeaveForInvalidDetails = useCallback((nextNav: () => void) => {
+    setPendingNav(() => nextNav);
+    setShowInvalidLeaveWarning(true);
+  }, []);
+
   const handleBack = () => {
+    if (hasInvalidDetailsState) {
+      promptLeaveForInvalidDetails(() => router.back());
+      return;
+    }
     if (isDirty) {
       setPendingNav(() => () => router.back());
       setShowUnsaved(true);
@@ -347,6 +493,24 @@ export default function EditNewsletterPage() {
       router.back();
     }
   };
+
+  const handleDelete = useCallback(async () => {
+    if (!id || isDeleting) return;
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await api.delete(`/api/newsletters/${id}`);
+      router.push("/newsletter");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Failed to delete newsletter.";
+      setError(message);
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }, [id, isDeleting, router]);
 
   const toggleTopic = (label: string) => {
     if (selectedTopics.includes(label)) {
@@ -363,20 +527,33 @@ export default function EditNewsletterPage() {
     deliveryTime.length > 0 &&
     timezone.length > 0 &&
     allocationValid &&
-    !isSaving;
+    !isSaving &&
+    !isDeleting;
+  const requiresWeekday = frequency === "Weekly" || frequency === "Bi-Weekly";
+  const requiresMonthlyDay = frequency === "Monthly";
+  const tierDisallowsWeekend = tier !== "premium";
+  const weekdayHelperText =
+    frequency === "Bi-Weekly"
+      ? "Choose your bi-weekly delivery day"
+      : "Choose one delivery weekday";
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
-        <p className="text-gray-500 font-semibold dark:text-gray-400">
-          Loading...
-        </p>
+      <div className="min-h-screen bg-gray-50 pb-12 dark:bg-slate-950">
+        <div className="max-w-[820px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+          <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-300">
+              <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <span>Loading newsletter settings...</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white pb-12 dark:bg-slate-950">
+    <div className="min-h-screen bg-gray-50 pb-12 dark:bg-slate-950">
       <SaveNotification
         show={showSaved}
         onDone={() => setShowSaved(false)}
@@ -397,12 +574,6 @@ export default function EditNewsletterPage() {
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-8">
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
-            {error}
-          </div>
-        )}
-
         {nearSendWarning && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
             Your next newsletter is scheduled within 30 minutes. Changes may
@@ -418,41 +589,94 @@ export default function EditNewsletterPage() {
           />
         </div>
 
+        {/* Delivery Email */}
+        <section className="space-y-2">
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+            Delivery Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            readOnly
+            className="input-field bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </section>
+
         {/* Topics */}
         <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
           <h2 className="text-lg font-black text-gray-900 dark:text-gray-100">
-            Topics
+            Choose Your Topics
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Select at least 1 topic.{" "}
+            {limits.maxTopics !== Infinity && `Max ${limits.maxTopics} on your plan.`}
+          </p>
+          <div className="grid grid-cols-2 items-stretch sm:grid-cols-3 gap-4">
             {renderTopicLabels.map((t) => {
               const sel = selectedTopics.includes(t);
+              const option = TOPIC_OPTIONS.find((topic) => topic.label === t);
+              const isMotivational = t === "Motivational Quotes/Stories";
+              const TopicIcon =
+                (Icons as Record<
+                  string,
+                  ComponentType<{ size?: number; className?: string }>
+                >)[option?.icon || ""] || Icons.ChevronRight;
               return (
                 <button
                   key={t}
                   type="button"
                   onClick={() => toggleTopic(t)}
-                  className={`h-full min-h-[88px] p-3 rounded-2xl border-2 text-left text-sm font-bold transition-all ${
+                  className={`flex h-full min-h-[94px] w-full flex-col self-stretch p-3.5 rounded-2xl border-2 text-left transition-all ${
                     sel
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-gray-200 text-gray-900 dark:border-slate-800 dark:text-gray-100"
+                      ? "border-primary bg-primary/10 shadow-md"
+                      : "border-gray-200 bg-white hover:border-primary/40 dark:border-slate-800 dark:bg-slate-900"
                   }`}
                 >
-                  {t}
+                  <div
+                    className={
+                      isMotivational
+                        ? "flex h-[2.625rem] shrink-0 items-start justify-between gap-2"
+                        : "flex shrink-0 items-start justify-between gap-2"
+                    }
+                  >
+                    <span
+                      className={`min-w-0 flex-1 text-sm font-bold leading-snug line-clamp-2 ${
+                        sel ? "text-primary" : "text-gray-900 dark:text-gray-100"
+                      }`}
+                    >
+                      {t}
+                    </span>
+                    <span className="-mt-0.5 inline-flex shrink-0 items-center justify-center self-start w-6 h-6 rounded-md border border-sky-300 text-sky-500 dark:border-sky-700 dark:text-sky-300">
+                      <TopicIcon size={13} />
+                    </span>
+                  </div>
+                  <span
+                    className={`block text-xs text-gray-500 dark:text-gray-400 leading-snug break-words ${
+                      isMotivational ? "mt-1" : "mt-0.5"
+                    }`}
+                  >
+                    {option?.description || ""}
+                  </span>
                 </button>
               );
             })}
           </div>
         </section>
 
-        {/* Per-topic details & priority */}
+        {/* Per-topic details */}
         {selectedTopics.length > 0 && (
+          <div className="relative">
+            <div className="absolute left-[-250px] top-[118px] hidden md:block">
+              <img
+                src="/logo-pigeon-instructions-details.svg"
+                alt="instructions"
+                className="h-56 w-auto object-contain"
+              />
+            </div>
           <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
             <h2 className="text-lg font-black text-gray-900 dark:text-gray-100">
-              Details &amp; Priority
+              Topic Details
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Time is allocated by priority (1–5 pigeons).
-            </p>
             {selectedTopics.map((topic) => (
               <div
                 key={topic}
@@ -461,32 +685,23 @@ export default function EditNewsletterPage() {
                 <h3 className="font-bold text-gray-900 dark:text-gray-100">
                   {topic}
                 </h3>
-                <textarea
-                  value={topicDetails[topic] ?? ""}
-                  onChange={(e) =>
-                    setTopicDetails((p) => ({
-                      ...p,
-                      [topic]: e.target.value.slice(0, 200),
-                    }))
-                  }
-                  maxLength={200}
-                  rows={3}
-                  placeholder={
-                    TOPIC_DETAIL_PLACEHOLDERS[topic] || DEFAULT_TOPIC_DETAIL_PLACEHOLDER
-                  }
-                  className="input-field resize-y overflow-y-auto"
-                  style={{ minHeight: "80px", maxHeight: "160px" }}
-                />
-                <TopicPrioritySelector
-                  topic={topic}
-                  priority={topicPriorities[topic] ?? 3}
-                  onPriorityChange={(p) =>
-                    setTopicPriorities((prev) => ({ ...prev, [topic]: p }))
-                  }
-                />
+                <div>
+                  <TopicDetailEditor
+                    topic={topic}
+                    value={topicDetails[topic] ?? ""}
+                    tier={tier}
+                    onChange={(nextValue) =>
+                      setTopicDetails((p) => ({
+                        ...p,
+                        [topic]: nextValue,
+                      }))
+                    }
+                  />
+                </div>
               </div>
             ))}
           </section>
+          </div>
         )}
 
         <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
@@ -497,17 +712,21 @@ export default function EditNewsletterPage() {
           {/* Read Time */}
           <section className="space-y-2">
             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-              Read Time: {readTimeMin} min
+              Total Read Time: {readTimeMin} min
             </label>
             <input
               type="range"
               min={limits.minReadTimeMin}
               max={limits.maxReadTimeMin}
-              step={0.5}
+              step={1}
               value={readTimeMin}
-              onChange={(e) => setReadTimeMin(parseFloat(e.target.value))}
+              onChange={(e) => setReadTimeMin(parseInt(e.target.value, 10))}
               className="w-full accent-primary"
             />
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>{limits.minReadTimeMin} min</span>
+              <span>{limits.maxReadTimeMin} min</span>
+            </div>
           </section>
 
           {/* Frequency */}
@@ -529,6 +748,56 @@ export default function EditNewsletterPage() {
                 </button>
               ))}
             </div>
+            {requiresWeekday && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  {weekdayHelperText}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAY_OPTIONS.map((day) => {
+                    const weekendBlocked = tierDisallowsWeekend && day.value >= 6;
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => setScheduleWeekday(day.value)}
+                        disabled={weekendBlocked}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                          scheduleWeekday === day.value
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-gray-700 border-gray-200 dark:bg-slate-900 dark:text-gray-200 dark:border-slate-700"
+                        } ${weekendBlocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {requiresMonthlyDay && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Choose a day of month
+                </label>
+                <div className="grid grid-cols-7 gap-2">
+                  {MONTH_DAY_OPTIONS.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setMonthlyDayOfMonth(day)}
+                      className={`h-8 rounded-md text-xs font-bold border transition-all ${
+                        monthlyDayOfMonth === day
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-gray-700 border-gray-200 dark:bg-slate-900 dark:text-gray-200 dark:border-slate-700"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Delivery Time */}
@@ -560,8 +829,8 @@ export default function EditNewsletterPage() {
               className="input-field"
             >
               {TIMEZONE_OPTIONS.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz}
+                <option key={tz.value} value={tz.value}>
+                  {tz.label}
                 </option>
               ))}
             </select>
@@ -569,6 +838,11 @@ export default function EditNewsletterPage() {
         </section>
 
 
+        {error && (
+          <div className="rounded-xl border border-red-500/80 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+            {error}
+          </div>
+        )}
         <button
           type="button"
           onClick={handleSave}
@@ -577,18 +851,110 @@ export default function EditNewsletterPage() {
         >
           {isSaving ? "Saving..." : "Save Changes"}
         </button>
+        <button
+          type="button"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={isSaving || isDeleting}
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          {isDeleting ? "Deleting..." : "Delete Newsletter"}
+        </button>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 space-y-4">
+            <h3 className="text-lg font-black text-gray-900 dark:text-gray-100">
+              Delete Newsletter
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              This action is not reversible. Deleting this newsletter will permanently remove it.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 transition-all hover:bg-gray-50 disabled:opacity-60 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting..." : "Delete Newsletter"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInvalidLeaveWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 space-y-4">
+            <h3 className="text-lg font-black text-gray-100">
+              Invalid Details Detected
+            </h3>
+            <p className="text-sm font-semibold text-white">
+              {INVALID_DETAILS_PAUSE_WARNING}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowInvalidLeaveWarning(false)}
+                disabled={isPausingForExit}
+                className="flex-1 rounded-xl border border-slate-600 px-4 py-2.5 text-sm font-bold text-gray-200 transition-all hover:bg-slate-800 disabled:opacity-60"
+              >
+                Stay on page
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!id || isPausingForExit) return;
+                  setIsPausingForExit(true);
+                  try {
+                    await api.patch(`/api/newsletters/${id}/pause`, { is_paused: true });
+                  } catch {
+                    // best-effort pause before navigating away
+                  } finally {
+                    setIsPausingForExit(false);
+                    setShowInvalidLeaveWarning(false);
+                    const targetNav = pendingNav;
+                    setPendingNav(null);
+                    targetNav?.();
+                  }
+                }}
+                disabled={isPausingForExit}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-60"
+              >
+                {isPausingForExit ? "Pausing..." : "Leave and pause"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <UnsavedChangesModal
         open={showUnsaved}
         onSave={async () => {
+          const targetNav = pendingNav;
+          const saveSucceeded = await handleSave();
+          if (!saveSucceeded) return;
           setShowUnsaved(false);
-          await handleSave();
-          pendingNav?.();
+          setPendingNav(null);
+          targetNav?.();
         }}
         onDiscard={() => {
           setShowUnsaved(false);
+          if (hasInvalidDetailsState) {
+            setShowInvalidLeaveWarning(true);
+            return;
+          }
           pendingNav?.();
+          setPendingNav(null);
         }}
         onCancel={() => {
           setShowUnsaved(false);

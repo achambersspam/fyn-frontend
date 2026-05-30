@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const BACKEND_API_ORIGIN =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:3001";
 
 const nextConfig = {
   async rewrites() {

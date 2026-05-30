@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/auth"];
+const PUBLIC_PATHS = ["/", "/auth", "/about", "/how-it-works", "/privacy", "/cookies", "/terms"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (pathname === "/" || pathname === "/auth")) {
+  if (user && pathname === "/auth") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
+import ObservabilityBootstrap from "@/components/ObservabilityBootstrap";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
+          <ObservabilityBootstrap />
           <div className="min-h-screen">
             <div className="fixed top-4 right-6 z-50 max-w-[90vw]">
               <ThemeToggle />

@@ -2,49 +2,95 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
-import { Plus, ChevronRight } from "@/components/Icons";
+import { ChevronRight } from "@/components/Icons";
+import PageSkeleton from "@/components/PageSkeleton";
 import { api } from "@/lib/api";
+import { getCurrentSession } from "@/lib/supabase";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
 import { TIER_LIMITS } from "@/lib/apiContracts";
-import UpgradeModal from "@/components/UpgradeModal";
 
 export default function NewsletterPage() {
+  const router = useRouter();
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [isNavigatingCreate, setIsNavigatingCreate] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      api.get<Newsletter[]>("/api/newsletters"),
-      api.get<Profile>("/api/me").catch(() => null),
-    ])
-      .then(([nls, prof]) => {
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      const session = await getCurrentSession({ retries: 2, retryDelayMs: 180 });
+      if (!session?.access_token) {
+        router.replace("/auth");
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
+      try {
+        const [nls, prof] = await Promise.all([
+          api.get<Newsletter[]>("/api/newsletters"),
+          api.get<Profile>("/api/me").catch(() => null),
+        ]);
+        if (cancelled) return;
         setNewsletters(Array.isArray(nls) ? nls : []);
         setProfile(prof);
-      })
-      .catch((err) => {
+      } catch (err) {
+        if (cancelled) return;
+        const status =
+          err && typeof err === "object" && "status" in err
+            ? (err as { status?: number }).status
+            : undefined;
+        if (status === 401) {
+          router.replace("/auth");
+          return;
+        }
         const msg =
           err && typeof err === "object" && "message" in err
             ? (err as { message: string }).message
             : "Unable to load newsletters.";
         setError(msg);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    void router.prefetch("/setup");
+    void router.prefetch("/dashboard");
+    void router.prefetch("/subscription");
+  }, [router]);
+
+  useEffect(() => {
+    newsletters.forEach((nl) => {
+      void router.prefetch(`/newsletter/${nl.id}`);
+    });
+  }, [newsletters, router]);
 
   const tier = profile?.tier ?? "basic";
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
   const atLimit =
     limits.maxNewsletters !== Infinity &&
     newsletters.length >= limits.maxNewsletters;
+  const createButtonLabel =
+    newsletters.length > 0 ? "Create Another Newsletter" : "Create Newsletter";
 
-  const handleAdd = () => {
+  const handleCreateNewsletter = () => {
     if (atLimit) {
-      setShowUpgrade(true);
+      setShowLimitModal(true);
+      return;
     }
+    setIsNavigatingCreate(true);
+    router.push("/setup");
   };
 
   return (
@@ -54,33 +100,16 @@ export default function NewsletterPage() {
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">
             My Newsletters
           </h1>
-          {atLimit ? (
-            <button
-              onClick={handleAdd}
-              className="flex items-center gap-1 text-primary font-bold text-sm hover:underline"
-            >
-              <Plus size={18} /> Add
-            </button>
-          ) : (
-            <Link
-              href="/setup"
-              className="flex items-center gap-1 text-primary font-bold text-sm hover:underline"
-            >
-              <Plus size={18} /> Add
-            </Link>
-          )}
         </div>
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-4">
         {isLoading && (
-          <div className="bg-white rounded-2xl p-5 text-center border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
-            Loading newsletters...
-          </div>
+          <PageSkeleton rows={3} />
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-5 text-center font-semibold dark:bg-red-950/30 dark:border-red-900/40 dark:text-red-200">
+          <div className="rounded-2xl p-5 text-center font-semibold bg-red-600 text-white">
             {error}
           </div>
         )}
@@ -99,7 +128,7 @@ export default function NewsletterPage() {
           </div>
         )}
 
-        {newsletters.map((nl) => (
+        {!isLoading && newsletters.map((nl) => (
           <Link
             key={nl.id}
             href={`/newsletter/${nl.id}`}
@@ -122,13 +151,53 @@ export default function NewsletterPage() {
             </div>
           </Link>
         ))}
+        {!isLoading && !error && (
+          <button
+            type="button"
+            onClick={handleCreateNewsletter}
+            disabled={isNavigatingCreate}
+            className="w-full btn-primary text-base"
+          >
+            {isNavigatingCreate ? "Opening setup..." : createButtonLabel}
+          </button>
+        )}
       </div>
 
-      <UpgradeModal
-        open={showUpgrade}
-        onClose={() => setShowUpgrade(false)}
-        message={`Your ${tier} plan allows up to ${limits.maxNewsletters} newsletter${limits.maxNewsletters !== 1 ? "s" : ""}. Upgrade to add more.`}
-      />
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 space-y-4">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {tier === "premium"
+                ? "You already have the maximum number of newsletters included in Premium."
+                : tier === "minimum"
+                  ? "Plus includes up to 2 newsletters. Upgrade to Premium for up to 5."
+                  : "Free includes 1 newsletter. Upgrade to add more."}
+            </p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLimitModal(false);
+                  router.push("/subscription");
+                }}
+                className="w-full btn-primary"
+              >
+                Go to subscription page
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLimitModal(false);
+                  router.push("/dashboard");
+                }}
+                className="w-full btn-outline"
+              >
+                Go back to home page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

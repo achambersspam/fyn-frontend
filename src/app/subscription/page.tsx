@@ -1,41 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
-import { api } from "@/lib/api";
-import type { CheckoutResponse } from "@/lib/apiContracts";
+import { api, type ApiError } from "@/lib/api";
+import type { CheckoutResponse, Profile } from "@/lib/apiContracts";
 
-const plans = [
+type PlanCard = {
+  id: string;
+  name: string;
+  price: string;
+  priceNote: string | null;
+  cadenceNote?: string;
+  features: string[];
+  cta: string;
+  disabled: boolean;
+  emphasized: boolean;
+  badge?: string;
+  anchorPrice?: string;
+  savingsNote?: string;
+  subtext?: string;
+};
+
+const plans: PlanCard[] = [
   {
     id: "basic",
-    name: "Basic",
+    name: "Free",
     price: "Free",
     priceNote: null,
+    cadenceNote: undefined,
     features: [
       "1 newsletter",
       "Up to 6 topics",
-      "1–10 min read time",
-      "7 AM – 6 PM delivery",
-      "Hourly increments",
+      "Weekday delivery windows",
+      "Ads enabled",
     ],
-    cta: "Current Plan",
+    cta: "Current plan",
     disabled: true,
     emphasized: false,
   },
   {
-    id: "minimum",
-    name: "Minimum",
+    id: "plus",
+    name: "Plus",
     price: "$4.99",
-    priceNote: "/month",
+    priceNote: " / 4 weeks",
+    cadenceNote: undefined,
     features: [
       "Up to 2 newsletters",
       "Up to 6 topics",
-      "Up to 12 min read time",
-      "6 AM – 9 PM delivery",
-      "30-min increments",
+      "Expanded delivery windows",
+      "Ads enabled",
     ],
-    cta: "Get Started",
+    cta: "Upgrade to Plus",
     disabled: false,
     emphasized: false,
   },
@@ -43,20 +59,19 @@ const plans = [
     id: "premium",
     name: "Premium",
     price: "$9.99",
-    priceNote: "/month",
+    priceNote: " / 4 weeks",
+    cadenceNote: undefined,
     anchorPrice: "$14.99",
-    savingsNote: "Save $60/year",
+    savingsNote: "Save vs. monthly bundles",
     badge: "MOST POPULAR",
     features: [
-      "Unlimited newsletters",
-      "Unlimited topics",
-      "Up to 25 min read time",
-      "5 AM – 10 PM delivery",
-      "15-min increments",
-      "Priority delivery",
+      "Up to 5 newsletters",
+      "Up to 6 topics",
+      "Weekend delivery (weekly / bi-weekly)",
+      "No ads",
     ],
-    cta: "Start Free Trial",
-    subtext: "7-day free trial. Credit card required.",
+    cta: "Upgrade to Premium",
+    subtext: "Credit card required. Cancel anytime.",
     disabled: false,
     emphasized: true,
   },
@@ -64,16 +79,37 @@ const plans = [
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const checkoutGuardRef = useRef(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const p = await api.get<Profile>("/api/me");
+        if (!cancelled) setProfile(p);
+      } catch {
+        /* anonymous / handled elsewhere */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const tier = profile?.tier ?? "basic";
 
   const handleCheckout = async (planId: string) => {
     if (planId === "basic") return;
+    if (checkoutGuardRef.current || loading !== null) return;
+    checkoutGuardRef.current = true;
     setLoading(planId);
     setError(null);
     try {
       const res = await api.post<CheckoutResponse>("/api/stripe/checkout", {
-        plan: planId,
+        plan: planId === "plus" ? "plus" : "premium",
       });
       if (res.url) {
         window.location.href = res.url;
@@ -81,13 +117,69 @@ export default function SubscriptionPage() {
       }
       setError("Could not start checkout. Please try again.");
     } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      let msg =
+        apiErr?.message ||
+        (err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Checkout failed.");
+      const code = apiErr?.code;
+      if (typeof code === "string" && code.startsWith("CHECKOUT_")) {
+        msg = `${msg} Use Manage billing to change plans or cancel duplicate subscriptions.`;
+      }
+      setError(msg);
+    } finally {
+      checkoutGuardRef.current = false;
+      setLoading(null);
+    }
+  };
+
+  const handlePortal = async () => {
+    if (checkoutGuardRef.current || loading !== null) return;
+    checkoutGuardRef.current = true;
+    setLoading("portal");
+    setError(null);
+    try {
+      const res = await api.post<CheckoutResponse>("/api/stripe/portal", {});
+      if (res.url) {
+        window.location.href = res.url;
+        return;
+      }
+      setError("Could not open billing portal.");
+    } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "message" in err
           ? (err as { message: string }).message
-          : "Checkout failed.";
+          : "Portal unavailable.";
       setError(msg);
     } finally {
+      checkoutGuardRef.current = false;
       setLoading(null);
+    }
+  };
+
+  const planLabel = (id: string) => {
+    if (id === "basic") return "Free";
+    if (id === "plus") return "Plus";
+    if (id === "premium") return "Premium";
+    return id;
+  };
+
+  const isCurrent = (planId: string) =>
+    (planId === "basic" && tier === "basic") ||
+    (planId === "plus" && tier === "minimum") ||
+    (planId === "premium" && tier === "premium");
+
+  const paidSubscriber = tier === "minimum" || tier === "premium";
+  const openingPortal = loading === "portal";
+
+  const primaryPlanAction = (planId: string) => {
+    if (planId === "premium" && tier === "minimum") {
+      void handlePortal();
+      return;
+    }
+    if (!isCurrent(planId)) {
+      void handleCheckout(planId);
     }
   };
 
@@ -96,6 +188,7 @@ export default function SubscriptionPage() {
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto flex items-center gap-3 px-4 sm:px-6 lg:px-10 py-4">
           <button
+            type="button"
             onClick={() => router.back()}
             className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
@@ -107,8 +200,8 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      <div className="max-w-[960px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-10 space-y-8">
-        <div className="text-center space-y-3">
+      <div className="max-w-[960px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-10">
+        <div className="text-center space-y-2.5 -mt-1">
           <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100">
             Your News. Built For You.
           </h2>
@@ -117,9 +210,22 @@ export default function SubscriptionPage() {
             your way.
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Cancel anytime. No contracts.
+            Cancel anytime. Test mode uses Stripe test cards only.
           </p>
         </div>
+
+        {paidSubscriber ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => void handlePortal()}
+              disabled={loading !== null}
+              className="btn-outline px-6 py-3 font-bold"
+            >
+              {loading === "portal" ? "Opening…" : "Manage billing"}
+            </button>
+          </div>
+        ) : null}
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 text-center dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
@@ -127,9 +233,7 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {/* Cards - mobile: Premium first stacked, desktop: 3 cols */}
         <div className="flex flex-col lg:flex-row gap-6 lg:items-end">
-          {/* Mobile order: premium first */}
           {[plans[2], plans[0], plans[1]].map((plan) => (
             <div
               key={plan.id}
@@ -142,12 +246,18 @@ export default function SubscriptionPage() {
               } bg-white dark:bg-slate-900`}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-black px-4 py-1 rounded-full">
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-black px-4 py-1 rounded-full">
                   {plan.badge}
                 </div>
               )}
 
-              <div className="space-y-4">
+              {isCurrent(plan.id) && (
+                <div className="mb-2 text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                  Current plan
+                </div>
+              )}
+
+              <div className="space-y-6">
                 <h3 className="text-xl font-black text-gray-900 dark:text-gray-100">
                   {plan.name}
                 </h3>
@@ -174,7 +284,7 @@ export default function SubscriptionPage() {
                   </p>
                 )}
 
-                <ul className="space-y-2">
+                <ul className="space-y-3 pb-1">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <Check
@@ -193,17 +303,34 @@ export default function SubscriptionPage() {
                 </ul>
 
                 <button
-                  onClick={() => handleCheckout(plan.id)}
-                  disabled={plan.disabled || loading === plan.id}
+                  type="button"
+                  onClick={() =>
+                    isCurrent(plan.id)
+                      ? undefined
+                      : primaryPlanAction(plan.id)
+                  }
+                  disabled={
+                    plan.disabled ||
+                    loading !== null ||
+                    isCurrent(plan.id)
+                  }
                   className={`w-full py-3 rounded-xl font-bold transition-all ${
                     plan.emphasized
                       ? "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95"
-                      : plan.disabled
+                      : plan.disabled || isCurrent(plan.id)
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-gray-500"
                         : "bg-primary text-white hover:bg-primary-dark active:scale-95"
                   }`}
                 >
-                  {loading === plan.id ? "Redirecting..." : plan.cta}
+                  {loading === plan.id
+                    ? "Redirecting..."
+                    : plan.id === "premium" && tier === "minimum" && openingPortal
+                      ? "Opening…"
+                      : isCurrent(plan.id)
+                        ? `${planLabel(plan.id)} active`
+                        : plan.id === "premium" && tier === "minimum"
+                          ? "Upgrade via Manage billing"
+                          : plan.cta}
                 </button>
 
                 {plan.subtext && (

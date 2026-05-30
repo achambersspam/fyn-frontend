@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { api } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import { api, type ApiError } from "@/lib/api";
 import type { Newsletter, NewsletterIssue } from "@/lib/apiContracts";
+import { getCurrentSession } from "@/lib/supabase";
+import { trackEvent } from "@/lib/analytics";
 
 export default function ReadNewsletterPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
@@ -17,26 +20,50 @@ export default function ReadNewsletterPage() {
 
   useEffect(() => {
     if (!id) return;
-    setIsLoading(true);
-    setError(null);
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      const session = await getCurrentSession({ retries: 2, retryDelayMs: 180 });
+      if (!session?.access_token) {
+        router.replace("/auth");
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
 
-    Promise.all([
-      api.get<Newsletter>(`/api/newsletters/${id}`),
-      api.get<NewsletterIssue>(`/api/newsletters/${id}/latest`),
-    ])
-      .then(([nl, latest]) => {
+      try {
+        const [nl, latest] = await Promise.all([
+          api.get<Newsletter>(`/api/newsletters/${id}`),
+          api.get<NewsletterIssue>(`/api/newsletters/${id}/latest`),
+        ]);
+        if (cancelled) return;
         setNewsletter(nl);
         setIssue(latest);
-      })
-      .catch((err) => {
+        void trackEvent("newsletter_read_in_dashboard", {
+          source: "read_page",
+          newsletter_id: id,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        const apiErr = err as ApiError;
+        if (apiErr?.status === 401) {
+          router.replace("/auth");
+          return;
+        }
         const message =
           err && typeof err === "object" && "message" in err
             ? (err as { message: string }).message
             : "Unable to load your newsletter issue.";
         setError(message);
-      })
-      .finally(() => setIsLoading(false));
-  }, [id]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, router]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pb-10">
@@ -53,8 +80,11 @@ export default function ReadNewsletterPage() {
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-4">
         {isLoading && (
-          <div className="bg-white rounded-2xl p-5 text-center border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
-            Loading your newsletter...
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
+            <div className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <span>Loading your newsletter...</span>
+            </div>
           </div>
         )}
 

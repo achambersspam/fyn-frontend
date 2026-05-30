@@ -50,3 +50,58 @@ export function inferPriorityFromSeconds(
   const p = Math.round((allocatedSeconds / totalSeconds) * totalWeight);
   return Math.max(1, Math.min(5, p));
 }
+
+type AllocateSecondsTopic = {
+  topic: string;
+  specific_details?: string;
+};
+
+type AllocateSecondsInput = {
+  topics: AllocateSecondsTopic[];
+  readTimeMinutes: number;
+};
+
+type AllocatedTopic = AllocateSecondsTopic & {
+  allocated_seconds: number;
+};
+
+/**
+ * Allocates seconds for API payloads with strict backend compatibility:
+ * - each topic gets at least 20s
+ * - sum always exactly equals readTimeMinutes * 60
+ * - if impossible, trims topic count to max feasible
+ */
+export function allocateSeconds({
+  topics,
+  readTimeMinutes,
+}: AllocateSecondsInput): AllocatedTopic[] {
+  const totalSeconds = Math.max(0, Math.floor(readTimeMinutes * 60));
+  const minPerTopic = 20;
+  const topicCount = topics.length;
+
+  if (topicCount === 0 || totalSeconds === 0) return [];
+
+  if (topicCount * minPerTopic > totalSeconds) {
+    const maxTopicCount = Math.floor(totalSeconds / minPerTopic);
+    return topics.slice(0, maxTopicCount).map((topic) => ({
+      ...topic,
+      allocated_seconds: minPerTopic,
+    }));
+  }
+
+  const baseAllocation = topics.map((topic) => ({
+    ...topic,
+    allocated_seconds: minPerTopic,
+  }));
+
+  let remaining = totalSeconds - topicCount * minPerTopic;
+  let i = 0;
+  while (remaining > 0) {
+    const increment = remaining >= 10 ? 10 : remaining;
+    baseAllocation[i % topicCount].allocated_seconds += increment;
+    remaining -= increment;
+    i++;
+  }
+
+  return baseAllocation;
+}

@@ -1,36 +1,176 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { Eye, EyeOff } from "@/components/Icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import type { Profile } from "@/lib/apiContracts";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { identifyUser, trackEvent } from "@/lib/analytics";
+
+const AUTH_SIGNIN_DRAFT_KEY = "auth_signin_draft_v1";
+const AUTH_POST_TARGET_KEY = "auth_post_target_v1";
+const AUTH_SETUP_BACK_BYPASS_KEY = "auth_setup_back_bypass_v1";
+const SETUP_DRAFT_STORAGE_KEY = "fyn.setupDraft.v2";
+const clearLegacySetupDraftStorage = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(SETUP_DRAFT_STORAGE_KEY);
+};
 
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [oauthProvider, setOauthProvider] = useState<"google" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [draftInitialized, setDraftInitialized] = useState(false);
+  const mountedRef = useRef(true);
+  const redirectingRef = useRef(false);
+  const setupBackBypassRef = useRef(false);
 
   const supabase = getSupabaseBrowserClient();
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const modeParam = new URLSearchParams(window.location.search).get("mode");
+      const fromSetupBackParam =
+        new URLSearchParams(window.location.search).get("fromSetupBack") === "1";
+      if (modeParam === "signin") {
+        setMode("signin");
+      }
+      const fromSetupBackStorage =
+        window.sessionStorage.getItem(AUTH_SETUP_BACK_BYPASS_KEY) === "1";
+      if (fromSetupBackParam || fromSetupBackStorage) {
+        setupBackBypassRef.current = true;
+        window.sessionStorage.removeItem(AUTH_SETUP_BACK_BYPASS_KEY);
+      }
+
+      const storedDraft = window.sessionStorage.getItem(AUTH_SIGNIN_DRAFT_KEY);
+      if (storedDraft) {
+        try {
+          const parsed = JSON.parse(storedDraft) as {
+            email?: string;
+            password?: string;
+          };
+          setFormData({
+            email: typeof parsed.email === "string" ? parsed.email : "",
+            password: typeof parsed.password === "string" ? parsed.password : "",
+          });
+        } catch {
+          window.sessionStorage.removeItem(AUTH_SIGNIN_DRAFT_KEY);
+        }
+      }
+      setDraftInitialized(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!draftInitialized) return;
+    window.sessionStorage.setItem(
+      AUTH_SIGNIN_DRAFT_KEY,
+      JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+      })
+    );
+  }, [formData, draftInitialized]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void router.prefetch("/setup");
+    void router.prefetch("/dashboard");
+  }, [router]);
+
+  useEffect(() => {
+    const redirectForSession = async (incomingSession?: Session | null) => {
+      if (redirectingRef.current) return;
+      if (setupBackBypassRef.current) {
+        return;
+      }
+      const session =
+        incomingSession ??
+        (
+          await supabase.auth.getSession()
+        ).data.session;
+      if (!session?.access_token) return;
+      clearLegacySetupDraftStorage();
+      redirectingRef.current = true;
+      const postAuthTarget =
+        typeof window !== "undefined"
+          ? window.sessionStorage.getItem(AUTH_POST_TARGET_KEY)
+          : null;
+      if (typeof window !== "undefined") {
+        if (postAuthTarget) {
+          window.sessionStorage.removeItem(AUTH_POST_TARGET_KEY);
+        }
+      }
+      if (postAuthTarget === "/setup" || postAuthTarget === "/dashboard") {
+        router.replace(postAuthTarget);
+        return;
+      }
+      // Route immediately for better perceived speed, then correct to setup if needed.
+      router.replace("/dashboard");
+      try {
+        const profile = await api.get<Profile>("/api/me");
+        identifyUser(session.user.id, {
+          tier: profile.tier,
+          onboarding_complete: profile.onboarding_complete,
+        });
+        if (!profile.onboarding_complete) {
+          router.replace("/setup");
+        }
+      } catch {
+        identifyUser(session.user.id, {});
+        router.replace("/dashboard");
+      }
+    };
+
+    void redirectForSession();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      if (!["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"].includes(event)) return;
+      if (!session) return;
+      void redirectForSession(session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router, supabase]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+    setupBackBypassRef.current = false;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(AUTH_SETUP_BACK_BYPASS_KEY);
+    }
+    if (mountedRef.current) {
+      setIsSubmitting(true);
+      setError(null);
+    }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      setIsSubmitting(false);
+      if (mountedRef.current) {
+        setError("Password must be at least 6 characters.");
+        setIsSubmitting(false);
+      }
       return;
     }
 
     try {
       if (mode === "signup") {
+        void trackEvent("signup_started", { auth_method: "email_password" });
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -45,26 +185,34 @@ export default function AuthPage() {
               .toLowerCase()
               .includes("exists")
           ) {
-            setError(
-              "An account with this email already exists. Please sign in instead."
-            );
-            setMode("signin");
-            setIsSubmitting(false);
+            if (mountedRef.current) {
+              setError(
+                "An account with this email already exists. Please sign in instead."
+              );
+              setMode("signin");
+              setIsSubmitting(false);
+            }
             return;
           }
           throw signUpError;
         }
 
         if (data.user && !data.session) {
-          setMode("signin");
-          setError("Account created! Please check your email to confirm, then sign in.");
-          setIsSubmitting(false);
+          if (mountedRef.current) {
+            setMode("signin");
+            setError("Account created! Please check your email to confirm, then sign in.");
+            setIsSubmitting(false);
+          }
           return;
         }
 
         if (data.session) {
+          void trackEvent("signup_completed", { auth_method: "email_password" });
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem(AUTH_POST_TARGET_KEY, "/setup");
+          }
           try {
-            await api.patch<Profile>("/api/me", {
+            void api.patch<Profile>("/api/me", {
               onboarding_complete: false,
               tier: "basic",
             });
@@ -81,52 +229,82 @@ export default function AuthPage() {
         });
 
         if (signInError) throw signInError;
+        void trackEvent("login_completed", { auth_method: "email_password" });
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem(AUTH_SIGNIN_DRAFT_KEY);
+        }
+        // Route immediately for snappier UX, then correct to setup if needed.
+        router.push("/dashboard");
 
         try {
           const profile = await api.get<Profile>("/api/me");
           if (!profile.onboarding_complete) {
-            router.push("/setup");
+            if (typeof window !== "undefined") {
+              window.sessionStorage.setItem(AUTH_POST_TARGET_KEY, "/setup");
+            }
+            router.replace("/setup");
             return;
           }
         } catch {
           /* if profile fetch fails, go to dashboard */
         }
-        router.push("/dashboard");
+        return;
       }
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "message" in err
           ? (err as { message: string }).message
           : "Something went wrong. Please try again.";
-      setError(message);
+      if (mountedRef.current) {
+        setError(message);
+      }
     } finally {
-      setIsSubmitting(false);
+      if (mountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleOAuth = async (provider: "google" | "apple") => {
-    setError(null);
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth`,
-      },
-    });
-    if (oauthError) {
-      setError(oauthError.message);
+  const handleOAuth = async (provider: "google") => {
+    if (oauthProvider) return;
+    setupBackBypassRef.current = false;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(AUTH_SETUP_BACK_BYPASS_KEY);
+    }
+    if (mountedRef.current) {
+      setError(null);
+      setOauthProvider(provider);
+    }
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth`,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (oauthError && mountedRef.current) {
+        setError(oauthError.message);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setOauthProvider(null);
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
-      <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-12 relative">
-        <div className="space-y-8">
+      <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 sm:py-4 relative">
+        <div className="space-y-3">
           <div className="text-center">
             <Logo
               variant="envelope"
-              className="w-[185px] h-[185px] mx-auto mb-6"
+              className="w-[94px] h-[94px] sm:w-[104px] sm:h-[104px] mx-auto mb-2"
             />
-            <h1 className="text-3xl font-black text-gray-900 mb-2 dark:text-gray-100">
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-1 dark:text-gray-100">
               Welcome!
             </h1>
             <p className="text-gray-600 text-sm dark:text-gray-300">
@@ -137,9 +315,9 @@ export default function AuthPage() {
           <div className="flex gap-2 bg-gray-100 rounded-xl p-1 dark:bg-slate-900">
             <button
               onClick={() => { setMode("signin"); setError(null); }}
-              className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-bold transition-all ${
                 mode === "signin"
-                  ? "bg-white text-gray-900 shadow-sm dark:bg-slate-950 dark:text-gray-100"
+                  ? "bg-white text-gray-900 shadow-sm ring-2 ring-sky-200 dark:bg-slate-950 dark:text-gray-100 dark:ring-sky-700/70"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
@@ -147,9 +325,9 @@ export default function AuthPage() {
             </button>
             <button
               onClick={() => { setMode("signup"); setError(null); }}
-              className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-bold transition-all ${
                 mode === "signup"
-                  ? "bg-white text-gray-900 shadow-sm dark:bg-slate-950 dark:text-gray-100"
+                  ? "bg-white text-gray-900 shadow-sm ring-2 ring-sky-200 dark:bg-slate-950 dark:text-gray-100 dark:ring-sky-700/70"
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
@@ -157,9 +335,9 @@ export default function AuthPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 dark:text-gray-300">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5 dark:text-gray-300">
                 Email
               </label>
               <input
@@ -175,7 +353,7 @@ export default function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 dark:text-gray-300">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5 dark:text-gray-300">
                 Password
               </label>
               <div className="relative">
@@ -201,7 +379,7 @@ export default function AuthPage() {
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+              <div className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">
                 {error}
               </div>
             )}
@@ -209,7 +387,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full btn-primary text-lg mt-6 disabled:opacity-60"
+              className="w-full btn-primary text-lg mt-2 disabled:opacity-60"
             >
               {isSubmitting
                 ? "Please wait..."
@@ -234,7 +412,8 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => handleOAuth("google")}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all dark:border-slate-800 dark:hover:border-slate-700"
+              disabled={isSubmitting || oauthProvider !== null}
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all disabled:opacity-60 disabled:cursor-not-allowed dark:border-slate-800 dark:hover:border-slate-700"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -255,23 +434,9 @@ export default function AuthPage() {
                 />
               </svg>
               <span className="font-semibold text-gray-700 dark:text-gray-200">
-                SIGN IN WITH GOOGLE
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleOAuth("apple")}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all dark:border-slate-800 dark:hover:border-slate-700"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span className="font-semibold text-gray-700 dark:text-gray-200">
-                SIGN IN WITH APPLE
+                {oauthProvider === "google"
+                  ? "CONNECTING TO GOOGLE..."
+                  : "SIGN IN WITH GOOGLE"}
               </span>
             </button>
           </div>

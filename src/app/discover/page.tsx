@@ -123,11 +123,9 @@ function ExploreCard({
 export default function DiscoverPage() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [exploreNew, setExploreNew] = useState<ExploreTopic[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
     setError(null);
 
     Promise.all([
@@ -146,8 +144,7 @@ export default function DiscoverPage() {
         setError(message);
         setTrendingTopics(fallbackTrending);
         setExploreNew(fallbackExplore);
-      })
-      .finally(() => setIsLoading(false));
+      });
   }, []);
 
   const displayTrending =
@@ -170,17 +167,10 @@ export default function DiscoverPage() {
               <Zap className="text-gray-700 dark:text-gray-300" size={20} />
             </div>
             <h2 className="font-black text-gray-900 text-xl dark:text-gray-100">
-              Trending Now
+              Trending Topics
             </h2>
           </div>
-
-          {isLoading && (
-            <div className="bg-white rounded-2xl p-5 border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
-              Loading trending topics...
-            </div>
-          )}
-
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 snap-x snap-mandatory">
+          <div className="themed-discover-scrollbar flex gap-4 overflow-x-auto pb-2 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 snap-x snap-mandatory">
             {displayTrending.map((topic) => (
               <TrendingCard
                 key={topic.title}
@@ -205,7 +195,6 @@ export default function DiscoverPage() {
               Explore Something New
             </h2>
           </div>
-
           <div className="space-y-3">
             {displayExplore.map((item) => (
               <ExploreCard
