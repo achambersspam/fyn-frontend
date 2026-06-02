@@ -21,6 +21,8 @@ next-env.d.ts
 screenshots/
 browser-screenshot-results.json
 browser-visible-checks.json
+e2e/.auth/
+e2e/test-results/
 
 # Session logs and launch test artifacts
 *.log
