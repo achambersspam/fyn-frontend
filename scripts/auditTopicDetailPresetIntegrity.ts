@@ -78,6 +78,11 @@ const run = () => {
     "Weather Forecasts",
     "Charlotte,North Carolina; Scottsdale,Arizona; San Francisco,California"
   );
+  for (const count of [1, 2, 3, 4, 5]) {
+    for (const difficulty of ["Easy", "Medium", "Hard", "Mixed"]) {
+      checkTopicDetail("Brain Teaser & Riddles", `Count: ${count} | Difficulty: ${difficulty}`);
+    }
+  }
 
   // Sports audits (all visible preset families and selectors).
   for (const league of PRO_SPORTS) {
@@ -117,7 +122,7 @@ const run = () => {
     Object.values(COLLEGE_FOOTBALL_TEAMS_BY_CONFERENCE).reduce((sum, list) => sum + list.length, 0) +
     Object.values(COLLEGE_BASKETBALL_TEAMS_BY_CONFERENCE).reduce((sum, list) => sum + list.length, 0) +
     INDEPENDENT_TEAMS.length +
-    2; // stock typed + weather typed multi-word checks
+    22; // stock typed + weather typed multi-word + 20 brain count/difficulty checks
 
   if (failures.length > 0) {
     console.error(

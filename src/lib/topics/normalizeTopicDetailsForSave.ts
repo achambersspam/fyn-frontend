@@ -1,4 +1,6 @@
 const collapseWhitespace = (value: string): string => value.replace(/\s+/g, " ").trim();
+const DEFAULT_TOPIC_DETAIL_MAX_LENGTH = 200;
+const SPORTS_TOPIC_DETAIL_MAX_LENGTH = 1200;
 
 const canonicalizeSportsText = (value: string): string => {
   const lower = value.toLowerCase();
@@ -70,10 +72,10 @@ export const normalizeTopicDetailsForSave = (
     const canonical = canonicalizeSportsText(compact);
     const structured = normalizeStructuredSports(canonical);
     if (!structured) return undefined;
-    return structured.slice(0, 200);
+    return structured.slice(0, SPORTS_TOPIC_DETAIL_MAX_LENGTH);
   }
   if (topic.toLowerCase() === "weather forecasts") {
     return normalizeWeatherRows(compact);
   }
-  return compact.slice(0, 200);
+  return compact.slice(0, DEFAULT_TOPIC_DETAIL_MAX_LENGTH);
 };

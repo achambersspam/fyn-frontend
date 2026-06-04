@@ -14,7 +14,7 @@ const PRESET_MAX = 4;
 const STOCK_THEME_MAX = 3;
 const WEATHER_MAX_LOCATIONS = 3;
 const PER_SPORT_TEAM_LIMIT = 3;
-const GOLF_SELECTION_LIMIT = 2;
+const GOLF_SELECTION_LIMIT = 3;
 const TOPIC_SUBTEXT: Record<string, string> = {
   "Tech & AI": "Get news on articles about these topics below",
   "World News": "Get news on articles about these topics below",
@@ -143,7 +143,7 @@ const PRO_SPORTS: Array<{
     key: "NHL",
     label: "NHL",
     teams: [
-      "Anaheim Ducks","Arizona Coyotes","Boston Bruins","Buffalo Sabres","Calgary Flames","Carolina Hurricanes","Chicago Blackhawks","Colorado Avalanche","Columbus Blue Jackets","Dallas Stars","Detroit Red Wings","Edmonton Oilers","Florida Panthers","Los Angeles Kings","Minnesota Wild","Montreal Canadiens","Nashville Predators","New Jersey Devils","New York Islanders","New York Rangers","Ottawa Senators","Philadelphia Flyers","Pittsburgh Penguins","San Jose Sharks","Seattle Kraken","St. Louis Blues","Tampa Bay Lightning","Toronto Maple Leafs","Vancouver Canucks","Vegas Golden Knights","Washington Capitals","Winnipeg Jets",
+      "Anaheim Ducks","Arizona Coyotes","Boston Bruins","Buffalo Sabres","Calgary Flames","Carolina Hurricanes","Chicago Blackhawks","Colorado Avalanche","Columbus Blue Jackets","Dallas Stars","Detroit Red Wings","Edmonton Oilers","Florida Panthers","Los Angeles Kings","Minnesota Wild","Montreal Canadiens","Nashville Predators","New Jersey Devils","New York Islanders","New York Rangers","Ottawa Senators","Philadelphia Flyers","Pittsburgh Penguins","San Jose Sharks","Seattle Kraken","St. Louis Blues","Tampa Bay Lightning","Toronto Maple Leafs","Utah Hockey Club","Vancouver Canucks","Vegas Golden Knights","Washington Capitals","Winnipeg Jets",
     ],
   },
   {
@@ -191,7 +191,26 @@ const COLLEGE_BASKETBALL_CONFERENCES = [
   "Sunbelt",
 ];
 const INDEPENDENT_TEAMS = ["Notre Dame", "UCONN"];
-const GOLF_NEWS_OPTIONS = ["Men's Golf News", "Women's Golf News"];
+const GOLF_NEWS_OPTIONS = [
+  "PGA Tour News",
+  "LIV Golf News",
+  "Men's Golf News",
+  "Women's Golf News",
+  "Rory McIlroy",
+  "Tiger Woods",
+  "Scottie Scheffler",
+  "Jon Rahm",
+  "Brooks Koepka",
+  "Bryson DeChambeau",
+  "Jordan Spieth",
+  "Justin Thomas",
+  "Collin Morikawa",
+  "Xander Schauffele",
+  "Nelly Korda",
+  "Lydia Ko",
+  "Rose Zhang",
+  "Lexi Thompson",
+];
 const PAC12_FOOTBALL_2026_27 = [
   "Oregon State",
   "Washington State",
@@ -371,7 +390,7 @@ const COLLEGE_BASKETBALL_TEAMS_BY_CONFERENCE: Record<string, string[]> = {
     "North Florida",
   ],
   "Big 12": ["Arizona", "Arizona State", "Baylor", "BYU", "Cincinnati", "Colorado", "Houston", "Iowa State", "Kansas", "Kansas State", "Oklahoma State", "TCU", "Texas Tech", "UCF", "Utah", "West Virginia"],
-  "Big East": ["Butler", "Creighton", "DePaul", "Georgetown", "Marquette", "Providence", "Seton Hall", "St. John's", "UConn", "Villanova", "Xavier"],
+  "Big East": ["Butler", "Creighton", "DePaul", "Georgetown", "Marquette", "Providence", "Seton Hall", "St. John's", "UConn", "Connecticut", "Villanova", "Xavier"],
   "Big 10": ["Illinois", "Indiana", "Iowa", "Maryland", "Michigan", "Michigan State", "Minnesota", "Nebraska", "Northwestern", "Ohio State", "Oregon", "Penn State", "Purdue", "Rutgers", "UCLA", "USC", "Washington", "Wisconsin"],
   "Big W": ["Cal Poly", "CSU Bakersfield", "UC Davis", "UC Irvine", "UC Riverside", "UC San Diego", "UC Santa Barbara", "Cal State Fullerton", "Long Beach State", "Hawaii"],
   "Coastal Athletic": ["Campbell", "Charleston", "Delaware", "Drexel", "Elon", "Hampton", "Hofstra", "Monmouth", "Northeastern", "Stony Brook", "Towson", "UNC Wilmington"],
@@ -516,8 +535,8 @@ const serializeBrain = (count: number | null, difficulty: string | null) => {
 };
 
 const parseBrain = (value: string) => {
-  const countMatch = value.match(/count:\s*([1-6])/i);
-  const difficultyMatch = value.match(/difficulty:\s*(easy|medium|hard)/i);
+  const countMatch = value.match(/count:\s*([1-5])/i);
+  const difficultyMatch = value.match(/difficulty:\s*(easy|medium|hard|mixed)/i);
   return {
     count: countMatch ? Number(countMatch[1]) : null,
     difficulty: difficultyMatch ? capitalizeWord(difficultyMatch[1]) : null,
@@ -889,7 +908,7 @@ export default function TopicDetailEditor({
 
   if (topic === "Brain Teaser & Riddles") {
     const parsed = parseBrain(value);
-    const countChoices = [1, 2, 3, 4, 5, 6];
+    const countChoices = [1, 2, 3, 4, 5];
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {topicSubtext ? (
@@ -919,7 +938,7 @@ export default function TopicDetailEditor({
             Choose the difficulty
           </h4>
           <div className="space-y-2">
-            {["Easy", "Medium", "Hard"].map((difficulty) => (
+            {["Easy", "Medium", "Hard", "Mixed"].map((difficulty) => (
               <button
                 key={difficulty}
                 type="button"
