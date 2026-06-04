@@ -13,11 +13,11 @@ const firstIssueInFlightByNewsletter = new Set<string>();
 const LOADING_MESSAGES = [
   "Generating your first newsletter",
   "Searching top news sources",
-  "Pulling Data and News",
-  "Summarizing Data and News",
+  "Pulling data and news",
+  "Summarizing data and news",
   "Writing your newsletter",
-  "Delivering to both your email and in app-dashboard",
-  "Check your email or in app-dashboard!",
+  "Preparing your in-app dashboard",
+  "Your newsletter is ready!",
 ] as const;
 const LOADING_MESSAGE_MIN_VISIBLE_MS = 1500;
 const LOADING_MESSAGE_TRANSITION_MS = 460;
@@ -87,7 +87,7 @@ function RollingLoadingMessage({
     }
     holdTimerRef.current = window.setTimeout(() => {
       const nextIndex = pendingTargetRef.current;
-      if (nextIndex === currentIndex || incomingIndex !== null) return;
+      if (nextIndex === currentIndex || nextIndex === incomingIndex || incomingIndex !== null) return;
       setIncomingIndex(nextIndex);
       setAnimateTransition(false);
       animationFrameRef.current = window.requestAnimationFrame(() => {
@@ -234,19 +234,10 @@ function CreatingNewsletterContent() {
     setProgressPercent(8);
     progressTimerRef.current = window.setInterval(() => {
       const elapsedMs = Date.now() - progressStartRef.current;
-      // Fallback profile: fast for first 6s, slower for second 6s, then gentle creep.
-      let nextProgress = 8;
-      if (elapsedMs <= 6000) {
-        const phase = elapsedMs / 6000;
-        nextProgress = 8 + phase * 62; // 8 -> 70
-      } else if (elapsedMs <= 12000) {
-        const phase = (elapsedMs - 6000) / 6000;
-        nextProgress = 70 + phase * 24; // 70 -> 94
-      } else {
-        const extraMs = elapsedMs - 12000;
-        nextProgress = 94 + (99 - 94) * (1 - Math.exp(-extraMs / 4500)); // creep to 99
-      }
-      setProgressPercent((prev) => Math.max(prev, Math.min(99, nextProgress)));
+      const expectedMs = 54000;
+      const phase = Math.min(1, elapsedMs / expectedMs);
+      const nextProgress = 8 + phase * 90; // 8 -> 98 over the expected first-issue window.
+      setProgressPercent((prev) => Math.max(prev, Math.min(98, nextProgress)));
     }, 140);
   }, [stopProgressTimer]);
 

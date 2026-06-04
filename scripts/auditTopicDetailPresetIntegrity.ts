@@ -38,7 +38,7 @@ const run = () => {
     STOCK_THEME_OPTIONS,
     CRYPTO_THEME_OPTIONS,
     PRO_SPORTS,
-    GOLF_TOP_PLAYERS,
+    GOLF_NEWS_OPTIONS,
     COLLEGE_FOOTBALL_CONFERENCES,
     COLLEGE_BASKETBALL_CONFERENCES,
     COLLEGE_FOOTBALL_TEAMS_BY_CONFERENCE,
@@ -85,8 +85,8 @@ const run = () => {
       checkTopicDetail("Sports", `${league.key}: [${team}]`);
     }
   }
-  for (const golfer of GOLF_TOP_PLAYERS) {
-    checkTopicDetail("Sports", `Golfers: [${golfer}]`);
+  for (const golfOption of GOLF_NEWS_OPTIONS) {
+    checkTopicDetail("Sports", `Golf: [${golfOption}]`);
   }
   for (const conference of COLLEGE_FOOTBALL_CONFERENCES) {
     checkTopicDetail("Sports", `College Football Teams: [${getConferenceNewsLabel(conference)}]`);
@@ -111,7 +111,7 @@ const run = () => {
     STOCK_THEME_OPTIONS.length +
     CRYPTO_THEME_OPTIONS.length +
     PRO_SPORTS.reduce((sum, sport) => sum + sport.teams.length, 0) +
-    GOLF_TOP_PLAYERS.length +
+    GOLF_NEWS_OPTIONS.length +
     COLLEGE_FOOTBALL_CONFERENCES.length +
     COLLEGE_BASKETBALL_CONFERENCES.length +
     Object.values(COLLEGE_FOOTBALL_TEAMS_BY_CONFERENCE).reduce((sum, list) => sum + list.length, 0) +

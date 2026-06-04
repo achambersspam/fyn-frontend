@@ -14,7 +14,7 @@ const PRESET_MAX = 4;
 const STOCK_THEME_MAX = 3;
 const WEATHER_MAX_LOCATIONS = 3;
 const PER_SPORT_TEAM_LIMIT = 3;
-const GOLF_SELECTION_LIMIT = 3;
+const GOLF_SELECTION_LIMIT = 2;
 const TOPIC_SUBTEXT: Record<string, string> = {
   "Tech & AI": "Get news on articles about these topics below",
   "World News": "Get news on articles about these topics below",
@@ -191,50 +191,7 @@ const COLLEGE_BASKETBALL_CONFERENCES = [
   "Sunbelt",
 ];
 const INDEPENDENT_TEAMS = ["Notre Dame", "UCONN"];
-const GOLF_TOP_PLAYERS = [
-  "PGA Tour News",
-  "LIV Tour News",
-  "Scottie Scheffler",
-  "Rory McIlroy",
-  "Xander Schauffele",
-  "Wyndham Clark",
-  "Viktor Hovland",
-  "Collin Morikawa",
-  "Ludvig Aberg",
-  "Patrick Cantlay",
-  "Tommy Fleetwood",
-  "Max Homa",
-  "Justin Thomas",
-  "Jordan Spieth",
-  "Hideki Matsuyama",
-  "Sam Burns",
-  "Tony Finau",
-  "Sahith Theegala",
-  "Cameron Young",
-  "Russell Henley",
-  "Keegan Bradley",
-  "Brian Harman",
-  "Akshay Bhatia",
-  "Matt Fitzpatrick",
-  "Shane Lowry",
-  "Jason Day",
-  "Sepp Straka",
-  "Corey Conners",
-  "Sungjae Im",
-  "Min Woo Lee",
-  "Adam Scott",
-  "Will Zalatoris",
-  "Jon Rahm",
-  "Bryson DeChambeau",
-  "Brooks Koepka",
-  "Dustin Johnson",
-  "Phil Mickelson",
-  "Joaquin Niemann",
-  "Cameron Smith",
-  "Talor Gooch",
-  "Sergio Garcia",
-  "Patrick Reed",
-];
+const GOLF_NEWS_OPTIONS = ["Men's Golf News", "Women's Golf News"];
 const PAC12_FOOTBALL_2026_27 = [
   "Oregon State",
   "Washington State",
@@ -586,9 +543,9 @@ const parseSports = (value: string): SportsState => {
       continue;
     }
     if (!payload.length) continue;
-    if (key === "Golfers") {
+    if (key === "Golfers" || key === "Golf") {
       state.enabledSports = Array.from(new Set([...state.enabledSports, "Golf"]));
-      state.golfPlayers = payload.slice(0, 15);
+      state.golfPlayers = payload.slice(0, GOLF_SELECTION_LIMIT);
       continue;
     }
     if (key === "College Football Conferences") {
@@ -685,7 +642,7 @@ const serializeSports = (sports: SportsState) => {
     }
   }
   if (sports.golfPlayers.length > 0) {
-    segments.push(`Golfers: [${sports.golfPlayers.join(", ")}]`);
+    segments.push(`Golf: [${sports.golfPlayers.join(", ")}]`);
   }
   const collegeFootballTeams = Object.values(sports.collegeFootballTeamsByConference).flat();
   if (collegeFootballTeams.length > 0) {
@@ -713,7 +670,7 @@ export const TOPIC_DETAIL_PRESET_AUDIT_DATA = {
   STOCK_THEME_OPTIONS,
   CRYPTO_THEME_OPTIONS,
   PRO_SPORTS,
-  GOLF_TOP_PLAYERS,
+  GOLF_NEWS_OPTIONS,
   COLLEGE_FOOTBALL_CONFERENCES,
   COLLEGE_BASKETBALL_CONFERENCES,
   COLLEGE_FOOTBALL_TEAMS_BY_CONFERENCE,
@@ -1038,7 +995,7 @@ export default function TopicDetailEditor({
       }
       const newTotal = isSelected ? selectedPlayerCount - 1 : selectedPlayerCount + 1;
       if (!isSelected && newTotal > sportsCap) {
-        setSportsNotice(`Current plan limit is ${sportsCap} total teams/players`);
+        setSportsNotice(`Current plan limit is ${sportsCap} total teams/topics`);
         return;
       }
       setSportsNotice("");
@@ -1056,12 +1013,12 @@ export default function TopicDetailEditor({
       const current = sports.golfPlayers;
       const isSelected = current.includes(player);
       if (!isSelected && current.length >= GOLF_SELECTION_LIMIT) {
-        setSportsNotice("current limit is three golfers");
+        setSportsNotice("choose Men's Golf News, Women's Golf News, or both");
         return;
       }
       const newTotal = isSelected ? selectedPlayerCount - 1 : selectedPlayerCount + 1;
       if (!isSelected && newTotal > sportsCap) {
-        setSportsNotice(`Current plan limit is ${sportsCap} total teams/players`);
+        setSportsNotice(`Current plan limit is ${sportsCap} total teams/topics`);
         return;
       }
       setSportsNotice("");
@@ -1090,7 +1047,7 @@ export default function TopicDetailEditor({
       }
       const newTotal = isSelected ? selectedPlayerCount - 1 : selectedPlayerCount + 1;
       if (!isSelected && newTotal > sportsCap) {
-        setSportsNotice(`Current plan limit is ${sportsCap} total teams/players`);
+        setSportsNotice(`Current plan limit is ${sportsCap} total teams/topics`);
         return;
       }
       setSportsNotice("");
@@ -1160,7 +1117,7 @@ export default function TopicDetailEditor({
           )}
         </div>
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-          Total selected teams/players: {selectedPlayerCount}/{sportsCap}
+          Total selected teams/topics: {selectedPlayerCount}/{sportsCap}
         </p>
         {sportsNotice ? (
           <p className="text-xs font-bold text-primary">{sportsNotice}</p>
@@ -1204,11 +1161,11 @@ export default function TopicDetailEditor({
           {enabled.includes("Golf") ? (
             <div className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-slate-700">
             <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-              Golf - Top players
+              Golf
             </label>
             <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 dark:border-slate-700">
               {renderSelectedTeamsSection(sports.golfPlayers, updateGolfPlayer)}
-              {GOLF_TOP_PLAYERS.map((player) => {
+              {GOLF_NEWS_OPTIONS.map((player) => {
                 const selected = sports.golfPlayers.includes(player);
                 return (
                   <button
