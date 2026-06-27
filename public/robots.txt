@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /how-it-works
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /setup
+Disallow: /newsletter
+Disallow: /subscription
+Disallow: /achievements
+Disallow: /discover
+Disallow: /auth
+
+Sitemap: https://foryounewsletter.com/sitemap.xml
