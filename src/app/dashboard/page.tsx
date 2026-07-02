@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, Clock, Pause, Play } from "@/components/Icons";
@@ -65,7 +65,7 @@ function buildScheduleMessage(newsletter: Newsletter): string {
   }
 }
 
-export default function DashboardPage() {
+function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = getSupabaseBrowserClient();
@@ -430,5 +430,13 @@ export default function DashboardPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardPage />
+    </Suspense>
   );
 }

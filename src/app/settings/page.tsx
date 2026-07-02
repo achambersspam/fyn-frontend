@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
@@ -30,7 +30,7 @@ function formatAccountPlanLabel(tier: string | undefined): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-export default function SettingsPage() {
+function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -494,5 +494,13 @@ export default function SettingsPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function SettingsPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsPage />
+    </Suspense>
   );
 }
