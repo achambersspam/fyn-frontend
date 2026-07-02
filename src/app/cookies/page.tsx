@@ -97,10 +97,10 @@ export default function CookiesPage() {
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Questions about this Cookie Policy? Contact us at:{" "}
             <a
-              href="mailto:foryou.newsletter@gmail.com"
+              href="mailto:hello@foryounewsletter.com"
               className="text-sky-600 hover:underline"
             >
-              foryou.newsletter@gmail.com
+              hello@foryounewsletter.com
             </a>
           </p>
         </Section>

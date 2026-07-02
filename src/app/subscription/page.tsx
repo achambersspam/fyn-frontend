@@ -210,7 +210,7 @@ export default function SubscriptionPage() {
             your way.
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Cancel anytime. Test mode uses Stripe test cards only.
+            Cancel anytime. No commitment.
           </p>
         </div>
 

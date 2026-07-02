@@ -331,8 +331,6 @@ function CreatingNewsletterContent() {
         sessionRetryDelayMs: 150,
         timeoutMs: 55000,
       });
-      console.log("FIRST_ISSUE_GENERATION_ELAPSED_MS", Math.round(performance.now() - startMs));
-
       if (generationResult.daily_limit_hit) {
         finishAsSuccess("Your newsletter preferences are saved.", true);
         return;
@@ -395,7 +393,6 @@ function CreatingNewsletterContent() {
           : apiErr?.status === 429
           ? "Generation is rate-limited temporarily. Please retry shortly."
           : apiErr?.message || "Failed to generate your first newsletter issue.";
-      console.log("FIRST_ISSUE_GENERATION_ELAPSED_MS", Math.round(performance.now() - startMs));
       setError(msg);
       setIsRunning(false);
       stopProgressTimer();

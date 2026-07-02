@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     template: "%s | For You Newsletter",
   },
   description: "Choose the topics and details you care about. Get one clean, focused daily digest in your inbox and your dashboard.",
+  icons: {
+    icon: "/pigeon-filled.svg",
+    apple: "/pigeon-filled.svg",
+  },
   openGraph: {
     type: "website",
     url: SITE_URL,

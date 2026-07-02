@@ -373,17 +373,6 @@ export default function EditNewsletterPage() {
     const saveEndpoint = `/api/newsletters/${id}`;
 
     try {
-      console.debug("Newsletter save request", {
-        id,
-        endpoint: saveEndpoint,
-        payloadSummary: {
-          topicCount: payload.topics?.length ?? 0,
-          read_time_minutes: payload.read_time_minutes,
-          frequency: payload.frequency,
-          delivery_time: payload.delivery_time,
-          timezone: payload.timezone,
-        },
-      });
       await api.put(saveEndpoint, payload);
       const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
       if (process.env.NODE_ENV !== "production") {
@@ -429,12 +418,6 @@ export default function EditNewsletterPage() {
           : err && typeof err === "object" && "message" in err
             ? (err as { message: string }).message
             : "Failed to save changes.";
-      console.error("Newsletter save failed", {
-        id,
-        endpoint: saveEndpoint,
-        payload,
-        error: err,
-      });
       setHasInvalidDetailsState(isInvalidDetailsApiError(msg, apiErr?.details));
       const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
       if (process.env.NODE_ENV !== "production") {

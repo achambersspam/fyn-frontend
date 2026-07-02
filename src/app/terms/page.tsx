@@ -198,10 +198,10 @@ export default function TermsPage() {
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Before filing any formal legal action, you agree to first contact us at{" "}
             <a
-              href="mailto:foryou.newsletter@gmail.com"
+              href="mailto:hello@foryounewsletter.com"
               className="text-sky-600 hover:underline"
             >
-              foryou.newsletter@gmail.com
+              hello@foryounewsletter.com
             </a>{" "}
             and give us 30 days to attempt to resolve the dispute informally.
           </p>
@@ -250,10 +250,10 @@ export default function TermsPage() {
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Questions about these Terms? Contact us at:{" "}
             <a
-              href="mailto:foryou.newsletter@gmail.com"
+              href="mailto:hello@foryounewsletter.com"
               className="text-sky-600 hover:underline"
             >
-              foryou.newsletter@gmail.com
+              hello@foryounewsletter.com
             </a>
           </p>
         </Section>
