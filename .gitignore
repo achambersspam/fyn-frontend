@@ -50,3 +50,6 @@ authenticated-launch-test-report.json
 npm-debug.log*
 yarn-debug.log*
 .cursor
+
+.vercel
+.env*
