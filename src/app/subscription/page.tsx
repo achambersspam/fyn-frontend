@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
+import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import { api, type ApiError } from "@/lib/api";
 import type { CheckoutResponse, Profile } from "@/lib/apiContracts";
 
@@ -187,13 +188,15 @@ export default function SubscriptionPage() {
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto flex items-center gap-3 px-4 sm:px-6 lg:px-10 py-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            <ChevronLeft size={24} />
-          </button>
+          <TooltipWithAria label="Back to the previous page">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          </TooltipWithAria>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">
             Subscription
           </h1>
@@ -216,14 +219,16 @@ export default function SubscriptionPage() {
 
         {paidSubscriber ? (
           <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => void handlePortal()}
-              disabled={loading !== null}
-              className="btn-outline px-6 py-3 font-bold"
-            >
-              {loading === "portal" ? "Opening…" : "Manage billing"}
-            </button>
+            <Tooltip label="Open the Stripe portal to update payment or cancel">
+              <button
+                type="button"
+                onClick={() => void handlePortal()}
+                disabled={loading !== null}
+                className="btn-outline px-6 py-3 font-bold"
+              >
+                {loading === "portal" ? "Opening…" : "Manage billing"}
+              </button>
+            </Tooltip>
           </div>
         ) : null}
 

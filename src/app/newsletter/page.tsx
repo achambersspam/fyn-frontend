@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { ChevronRight } from "@/components/Icons";
 import PageSkeleton from "@/components/PageSkeleton";
+import Tooltip from "@/components/Tooltip";
 import { api } from "@/lib/api";
 import { getCurrentSession } from "@/lib/supabase";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
@@ -123,7 +124,9 @@ export default function NewsletterPage() {
               Create your first personalized newsletter.
             </p>
             <Link href="/setup">
-              <button className="btn-primary">Create Newsletter</button>
+              <Tooltip label="Start the setup wizard to build your personalized newsletter">
+                <button className="btn-primary">Create Newsletter</button>
+              </Tooltip>
             </Link>
           </div>
         )}
@@ -152,14 +155,19 @@ export default function NewsletterPage() {
           </Link>
         ))}
         {!isLoading && !error && (
-          <button
-            type="button"
-            onClick={handleCreateNewsletter}
-            disabled={isNavigatingCreate}
-            className="w-full btn-primary text-base"
+          <Tooltip
+            label="Create another newsletter (plan limits apply)"
+            className="w-full"
           >
-            {isNavigatingCreate ? "Opening setup..." : createButtonLabel}
-          </button>
+            <button
+              type="button"
+              onClick={handleCreateNewsletter}
+              disabled={isNavigatingCreate}
+              className="w-full btn-primary text-base"
+            >
+              {isNavigatingCreate ? "Opening setup..." : createButtonLabel}
+            </button>
+          </Tooltip>
         )}
       </div>
 

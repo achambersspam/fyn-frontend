@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import Tooltip from "@/components/Tooltip";
 import { Trophy, Clock, Pause, Play } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
@@ -236,7 +237,9 @@ function DashboardPage() {
               Create your first personalized newsletter to get started.
             </p>
             <Link href="/setup">
-              <button className="btn-primary">Create Newsletter</button>
+              <Tooltip label="Start the setup wizard to build your personalized newsletter">
+                <button className="btn-primary">Create Newsletter</button>
+              </Tooltip>
             </Link>
           </div>
         )}
@@ -310,9 +313,11 @@ function DashboardPage() {
                           }
                         }
                       >
-                        <button className="w-full btn-primary text-base">
-                          Read Your Newsletter
-                        </button>
+                        <Tooltip label="Open your latest issue in the reader" className="w-full">
+                          <button className="w-full btn-primary text-base">
+                            Read Your Newsletter
+                          </button>
+                        </Tooltip>
                       </Link>
                     ) : isFailed ? (
                       <p className="text-sm font-semibold text-red-600 dark:text-red-300">
@@ -354,25 +359,33 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => togglePause(primary)}
-                  disabled={togglingPause === primary.id}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                <Tooltip
+                  label={
                     primary.paused
-                      ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
-                  }`}
+                      ? "Resume scheduled delivery of this newsletter"
+                      : "Pause delivery — no new issues until you resume"
+                  }
                 >
-                  {primary.paused ? (
-                    <>
-                      <Play size={16} /> Resume
-                    </>
-                  ) : (
-                    <>
-                      <Pause size={16} /> Pause
-                    </>
-                  )}
-                </button>
+                  <button
+                    onClick={() => togglePause(primary)}
+                    disabled={togglingPause === primary.id}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                      primary.paused
+                        ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {primary.paused ? (
+                      <>
+                        <Play size={16} /> Resume
+                      </>
+                    ) : (
+                      <>
+                        <Pause size={16} /> Pause
+                      </>
+                    )}
+                  </button>
+                </Tooltip>
               </div>
             </div>
 

@@ -12,6 +12,7 @@ import type {
 } from "@/lib/apiContracts";
 import { TIER_LIMITS, type Tier } from "@/lib/apiContracts";
 import SaveNotification from "@/components/SaveNotification";
+import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import UnsavedChangesModal from "@/components/UnsavedChangesModal";
 import {
   allocateByPriority,
@@ -544,12 +545,14 @@ export default function EditNewsletterPage() {
 
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto flex items-center gap-3 px-4 sm:px-6 lg:px-10 py-4">
-          <button
-            onClick={handleBack}
-            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            <ChevronLeft size={24} />
-          </button>
+          <TooltipWithAria label="Back to dashboard (unsaved changes will prompt)">
+            <button
+              onClick={handleBack}
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          </TooltipWithAria>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">
             Edit Newsletter
           </h1>
@@ -826,22 +829,29 @@ export default function EditNewsletterPage() {
             {error}
           </div>
         )}
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        <Tooltip label="Save your topic and schedule changes" className="w-full">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </button>
+        </Tooltip>
+        <Tooltip
+          label="Permanently delete this newsletter and stop all deliveries"
+          className="w-full"
         >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirm(true)}
-          disabled={isSaving || isDeleting}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          {isDeleting ? "Deleting..." : "Delete Newsletter"}
-        </button>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={isSaving || isDeleting}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isDeleting ? "Deleting..." : "Delete Newsletter"}
+          </button>
+        </Tooltip>
       </div>
 
       {showDeleteConfirm && (

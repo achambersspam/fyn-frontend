@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import Logo from "@/components/Logo";
+import Tooltip from "@/components/Tooltip";
 import {
   ChevronRight,
   CreditCard,
@@ -361,14 +362,16 @@ function SettingsPage() {
               )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {paidTier ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleManageBilling()}
-                    className="btn-outline text-sm py-2 px-3"
-                    disabled={isLoading || isOpeningPortal}
-                  >
-                    {isOpeningPortal ? "Opening…" : "Manage billing"}
-                  </button>
+                  <Tooltip label="Open the Stripe portal to update payment or cancel">
+                    <button
+                      type="button"
+                      onClick={() => void handleManageBilling()}
+                      className="btn-outline text-sm py-2 px-3"
+                      disabled={isLoading || isOpeningPortal}
+                    >
+                      {isOpeningPortal ? "Opening…" : "Manage billing"}
+                    </button>
+                  </Tooltip>
                 ) : null}
                 <button
                   type="button"
@@ -442,14 +445,16 @@ function SettingsPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-red-200 text-red-600 font-bold hover:bg-red-50 transition-all dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/30"
-        >
-          <LogOut size={20} />
-          {isSigningOut ? "Signing Out..." : "Sign Out"}
-        </button>
+        <Tooltip label="Sign out of your account on this device" className="w-full">
+          <button
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-red-200 text-red-600 font-bold hover:bg-red-50 transition-all dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/30"
+          >
+            <LogOut size={20} />
+            {isSigningOut ? "Signing Out..." : "Sign Out"}
+          </button>
+        </Tooltip>
 
         {searchParams.get("unsubscribe") === "true" && !profile?.is_unsubscribed ? (
           <p className="text-center text-xs text-amber-600 dark:text-amber-400">

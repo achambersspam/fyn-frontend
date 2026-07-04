@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "@/components/Icons";
 import { useTheme } from "@/components/ThemeProvider";
+import Tooltip from "@/components/Tooltip";
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
@@ -18,6 +19,7 @@ export default function ThemeToggle() {
   const label = isDark ? "Dark" : "Light";
 
   return (
+    <Tooltip label={`Switch to ${isDark ? "light" : "dark"} mode`}>
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
@@ -46,5 +48,6 @@ export default function ThemeToggle() {
         </span>
       </span>
     </button>
+    </Tooltip>
   );
 }
