@@ -58,18 +58,25 @@ const CONTINENTS: number[][][] = [
     [-16, 18], [-17, 21], [-15, 24], [-13, 27], [-10, 29], [-9, 31],
     [-6, 35],
   ],
-  // Europe (Iberia → Mediterranean incl. Italy/Greece → Black Sea →
-  // Russia → Scandinavia → Atlantic coast)
+  // Europe — Iberia → Mediterranean (Italy boot, Adriatic, Greece) →
+  // Aegean/Black Sea → up the Russian steppe to the White Sea →
+  // Scandinavian peninsula → Baltic → Denmark → North Sea → Atlantic
   [
-    [-9, 43], [-9, 39], [-8, 37], [-5, 36], [-1, 37], [1, 39], [3, 42],
-    [6, 43], [8, 44], [10, 44], [12, 44], [14, 42], [16, 40], [18, 40],
-    [16, 38], [16, 39], [18, 40], [19, 42], [19, 40], [21, 38], [22, 37],
-    [24, 38], [24, 40], [26, 41], [29, 41], [31, 44], [34, 45], [37, 45],
-    [40, 47], [44, 47], [48, 46], [50, 50], [48, 54], [44, 56], [40, 58],
-    [37, 60], [33, 60], [30, 60], [29, 63], [28, 66], [25, 69], [22, 70],
-    [18, 69], [15, 68], [13, 66], [11, 64], [9, 61], [7, 58], [8, 57],
-    [10, 57], [12, 56], [10, 55], [8, 55], [7, 53], [4, 52], [1, 51],
-    [-2, 50], [-5, 49], [-2, 47], [-2, 44], [-9, 43],
+    [-9, 43], [-9, 41], [-9, 38], [-7, 37], [-5, 36], [-2, 37], [0, 39],
+    [1, 41], [3, 42], [5, 43], [7, 44], [9, 44], [10, 44], [12, 44],
+    [13, 43], [14, 42], [15, 41], [17, 40], [18, 40], [17, 39], [16, 38],
+    [17, 39], [16, 41], [14, 42], [13, 44], [14, 45], [16, 44], [18, 42],
+    [19, 42], [19, 40], [20, 39], [21, 37], [22, 36], [23, 37], [23, 38],
+    [24, 38], [23, 39], [23, 40], [25, 40], [26, 40], [28, 41], [29, 41],
+    [28, 43], [30, 45], [32, 46], [35, 46], [37, 45], [38, 47], [40, 47],
+    [44, 47], [48, 46], [49, 49], [50, 52], [49, 55], [46, 57], [43, 59],
+    [40, 61], [38, 64], [40, 66], [37, 66], [33, 66], [31, 63], [30, 60],
+    [28, 60], [26, 60], [25, 61], [25, 63], [26, 65], [28, 66], [26, 68],
+    [25, 69], [22, 70], [19, 70], [16, 69], [14, 68], [13, 66], [12, 64],
+    [10, 63], [8, 61], [6, 60], [5, 59], [7, 58], [8, 57], [10, 57],
+    [12, 56], [13, 55], [11, 54], [9, 55], [8, 56], [8, 55], [7, 54],
+    [5, 53], [4, 52], [2, 51], [0, 50], [-2, 50], [-4, 48], [-2, 47],
+    [-1, 45], [-2, 44], [-9, 43],
   ],
   // Asia (Urals/Caspian join → Siberia → Kamchatka → China coast →
   // Southeast Asia → India → Arabia → back to Caspian)
@@ -142,6 +149,45 @@ const CONTINENTS: number[][][] = [
     [109, 1], [111, 3], [114, 4], [117, 6], [119, 4], [117, 0], [114, -2],
     [111, -1], [109, 1],
   ],
+];
+
+// Major cities as [lon, lat] — rendered as gently pulsing royal-blue dots.
+const CITIES: number[][] = [
+  // North America
+  [-74, 40.7], // New York
+  [-118.2, 34.1], // Los Angeles
+  [-87.6, 41.9], // Chicago
+  [-79.4, 43.7], // Toronto
+  [-99.1, 19.4], // Mexico City
+  // South America
+  [-46.6, -23.5], // São Paulo
+  [-58.4, -34.6], // Buenos Aires
+  [-74.1, 4.7], // Bogotá
+  [-43.2, -22.9], // Rio de Janeiro
+  // Africa
+  [3.4, 6.5], // Lagos
+  [31.2, 30.0], // Cairo
+  [36.8, -1.3], // Nairobi
+  [28.0, -26.2], // Johannesburg
+  // Europe
+  [-0.1, 51.5], // London
+  [2.35, 48.9], // Paris
+  [13.4, 52.5], // Berlin
+  [-3.7, 40.4], // Madrid
+  [37.6, 55.8], // Moscow
+  [28.98, 41.0], // Istanbul
+  // Asia
+  [55.3, 25.2], // Dubai
+  [72.9, 19.1], // Mumbai
+  [77.2, 28.6], // Delhi
+  [103.8, 1.35], // Singapore
+  [116.4, 39.9], // Beijing
+  [121.5, 31.2], // Shanghai
+  [127.0, 37.5], // Seoul
+  [139.7, 35.7], // Tokyo
+  // Oceania
+  [151.2, -33.9], // Sydney
+  [174.8, -36.8], // Auckland
 ];
 
 const DEG = Math.PI / 180;
@@ -226,8 +272,29 @@ export default function RotatingGlobe({ size = 380 }: { size?: number }) {
     const continents: Vec3[][] = CONTINENTS.map((outline) =>
       outline.map(([lon, lat]) => toSphere(lon, lat))
     );
+    const cities: Vec3[] = CITIES.map(([lon, lat]) => toSphere(lon, lat));
 
-    const drawFrame = (rotation: number) => {
+    const drawCities = (rotation: number, timeSeconds: number) => {
+      for (let i = 0; i < cities.length; i += 1) {
+        const { x, y, visible } = project(cities[i], rotation);
+        if (!visible) continue;
+        // Gentle asynchronous pulse per city.
+        const pulse = 0.55 + 0.45 * Math.sin(timeSeconds * 2 + i * 1.7);
+        const r = 1.8 + 1.2 * pulse;
+        // Soft glow halo
+        ctx.beginPath();
+        ctx.arc(x, y, r * 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(65,105,225,${0.18 * pulse})`;
+        ctx.fill();
+        // Core dot — royal blue
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(65,105,225,${0.55 + 0.45 * pulse})`;
+        ctx.fill();
+      }
+    };
+
+    const drawFrame = (rotation: number, timeSeconds: number) => {
       ctx.clearRect(0, 0, size, size);
       // Sphere silhouette
       ctx.beginPath();
@@ -240,19 +307,22 @@ export default function RotatingGlobe({ size = 380 }: { size?: number }) {
       for (const line of parallels) strokePolyline(line, rotation, "rgba(255,255,255,0.28)", 0.8);
       // Continents — brighter white outlines
       for (const outline of continents) strokePolyline(outline, rotation, "rgba(255,255,255,0.95)", 1.6);
+      // Major cities — pulsing royal-blue markers
+      drawCities(rotation, timeSeconds);
     };
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
-      drawFrame(0.6);
+      drawFrame(0.6, 0);
       return;
     }
 
     let frameId = 0;
     const start = performance.now();
     const loop = (now: number) => {
-      const rotation = ((now - start) / 1000) * 0.35; // ~18s per revolution
-      drawFrame(rotation);
+      const elapsed = (now - start) / 1000;
+      const rotation = elapsed * 0.35; // ~18s per revolution
+      drawFrame(rotation, elapsed);
       frameId = requestAnimationFrame(loop);
     };
     frameId = requestAnimationFrame(loop);

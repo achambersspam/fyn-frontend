@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
+import Logo from "@/components/Logo";
 
 export default function LandingPage() {
   const [settingsHref, setSettingsHref] = useState("/auth?mode=signin");
@@ -28,23 +29,31 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <PublicSiteNav settingsHref={settingsHref} />
       <main>
-        {/* Globe hero */}
+        {/* Globe hero — 50/50 split: brand + one-liner left, earth right */}
         <section className="relative overflow-hidden bg-slate-950">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 65%, rgba(28,176,246,0.22), transparent 60%)",
+                "radial-gradient(ellipse at 72% 55%, rgba(28,176,246,0.22), transparent 60%)",
             }}
           />
-          <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-4 pt-14 sm:px-6 lg:px-8">
-            <h1 className="animate-fade-up text-center text-4xl font-black tracking-tight text-white sm:text-5xl">
-              News Around the World{" "}
-              <span className="text-gradient-brand">For You</span>
-            </h1>
-            <div className="animate-fade-up delay-200 mt-6">
-              <RotatingGlobe size={380} />
+          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-left">
+              <Logo variant="envelope" className="h-24 w-24 animate-fade-up" />
+              <h1 className="animate-fade-up delay-100 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">
+                News Around the World{" "}
+                <span className="text-gradient-brand">For You</span>
+              </h1>
+              <p className="animate-fade-up delay-200 max-w-md text-lg text-slate-300">
+                One personalized daily newsletter — your topics, your teams,
+                your cities — delivered by our pigeon to your inbox and
+                dashboard.
+              </p>
+            </div>
+            <div className="animate-fade-up delay-200 flex justify-center lg:justify-end">
+              <RotatingGlobe size={420} />
             </div>
           </div>
         </section>
