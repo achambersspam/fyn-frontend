@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
+import RotatingGlobe from "@/components/RotatingGlobe";
 
 export default function LandingPage() {
   const [settingsHref, setSettingsHref] = useState("/auth?mode=signin");
@@ -27,6 +28,27 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <PublicSiteNav settingsHref={settingsHref} />
       <main>
+        {/* Globe hero */}
+        <section className="relative overflow-hidden bg-slate-950">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 65%, rgba(28,176,246,0.22), transparent 60%)",
+            }}
+          />
+          <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-4 pt-14 sm:px-6 lg:px-8">
+            <h1 className="animate-fade-up text-center text-4xl font-black tracking-tight text-white sm:text-5xl">
+              News Around the World{" "}
+              <span className="text-gradient-brand">For You</span>
+            </h1>
+            <div className="animate-fade-up delay-200 mt-6">
+              <RotatingGlobe size={380} />
+            </div>
+          </div>
+        </section>
+
         {/* Hero */}
         <section className="relative overflow-hidden">
           {/* Ambient brand glow behind the hero */}
@@ -43,10 +65,10 @@ export default function LandingPage() {
                 </span>
                 Personalized AI Newsletter
               </p>
-              <h1 className="animate-fade-up delay-100 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
+              <h2 className="animate-fade-up delay-100 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
                 News that is{" "}
                 <span className="text-gradient-brand">actually for you.</span>
-              </h1>
+              </h2>
               <p className="animate-fade-up delay-200 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
                 Pick the topics and the exact details you care about. Every day our
                 pigeon delivers one clean, focused digest — to your inbox and your
