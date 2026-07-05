@@ -5,7 +5,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Terms of Use</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: June 2, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: July 4, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           These Terms of Use ("Terms") govern your access to and use of the For You
@@ -206,10 +206,56 @@ export default function TermsPage() {
             and give us 30 days to attempt to resolve the dispute informally.
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            If the dispute is not resolved informally, it shall be governed by the laws of
-            the State of Georgia, United States, without regard to its conflict-of-law
-            provisions, and you consent to exclusive jurisdiction in the state or federal
-            courts located in Georgia.
+            These Terms are governed by the laws of the State of Georgia, United States,
+            without regard to its conflict-of-law provisions.
+          </p>
+
+          <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-200">
+            Binding Arbitration
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            PLEASE READ THIS SECTION CAREFULLY — IT AFFECTS YOUR LEGAL RIGHTS. If informal
+            resolution fails, you and For You Newsletter agree that any dispute, claim, or
+            controversy arising out of or relating to these Terms or the Service that cannot
+            be resolved informally shall be resolved exclusively through final and binding
+            individual arbitration, rather than in court, except that either party may bring
+            an individual claim in small-claims court if it qualifies.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            The arbitration will be administered by the American Arbitration Association (AAA)
+            under its Consumer Arbitration Rules, and may be conducted by telephone, video,
+            or written submissions where permitted. The arbitrator's award may be entered in
+            any court of competent jurisdiction. This arbitration agreement is governed by
+            the Federal Arbitration Act.
+          </p>
+
+          <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-200">
+            Class-Action Waiver
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            YOU AND FOR YOU NEWSLETTER AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY
+            IN AN INDIVIDUAL CAPACITY, AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED
+            CLASS, COLLECTIVE, OR REPRESENTATIVE PROCEEDING. The arbitrator may not consolidate
+            more than one person's claims or preside over any form of a representative or
+            class proceeding.
+          </p>
+
+          <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-200">
+            Your Right to Opt Out
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            You may opt out of this arbitration agreement within 30 days of first accepting
+            these Terms by emailing{" "}
+            <a
+              href="mailto:hello@foryounewsletter.com"
+              className="text-sky-600 hover:underline"
+            >
+              hello@foryounewsletter.com
+            </a>{" "}
+            with your account email and the subject line "Arbitration Opt-Out." Opting out
+            will not affect any other part of these Terms. If you opt out, disputes will be
+            resolved in the state or federal courts located in Georgia, to whose exclusive
+            jurisdiction you consent.
           </p>
         </Section>
 
