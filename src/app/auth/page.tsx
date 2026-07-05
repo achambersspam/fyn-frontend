@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { Eye, EyeOff } from "@/components/Icons";
+import ValidatedInput from "@/components/ValidatedInput";
+import { useFieldValidation, validators } from "@/lib/useFieldValidation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import type { Profile } from "@/lib/apiContracts";
@@ -28,6 +30,10 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [draftInitialized, setDraftInitialized] = useState(false);
+  const validation = useFieldValidation({
+    email: validators.email,
+    password: validators.password,
+  });
   const mountedRef = useRef(true);
   const redirectingRef = useRef(false);
   const setupBackBypassRef = useRef(false);
@@ -160,9 +166,10 @@ export default function AuthPage() {
       setError(null);
     }
 
-    if (formData.password.length < 6) {
+    // On submit, surface any remaining field errors (all at once) and block.
+    if (!validation.validateAll()) {
       if (mountedRef.current) {
-        setError("Password must be at least 6 characters.");
+        setError(null);
         setIsSubmitting(false);
       }
       return;
@@ -336,47 +343,49 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5 dark:text-gray-300">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="Enter your email"
-                className="input-field"
-                required
-              />
-            </div>
+            <ValidatedInput
+              label="Email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="Enter your email"
+              status={validation.status("email")}
+              errorMessage={validation.error("email")}
+              value={formData.email}
+              onChange={(e) => {
+                setFormData((d) => ({ ...d, email: e.target.value }));
+                validation.handleChange("email", e.target.value);
+              }}
+              onBlur={() => validation.handleBlur("email")}
+              required
+            />
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5 dark:text-gray-300">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  placeholder="Enter your password"
-                  className="input-field pr-12"
-                  required
-                  minLength={6}
-                />
+            <ValidatedInput
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              placeholder="Enter your password"
+              status={validation.status("password")}
+              errorMessage={validation.error("password")}
+              value={formData.password}
+              onChange={(e) => {
+                setFormData((d) => ({ ...d, password: e.target.value }));
+                validation.handleChange("password", e.target.value);
+              }}
+              onBlur={() => validation.handleBlur("password")}
+              required
+              minLength={6}
+              trailing={
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             {error && (
               <div className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">
