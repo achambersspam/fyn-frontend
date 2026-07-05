@@ -170,11 +170,13 @@ export type TrendingTopic = {
   description: string;
   tag: string;
   category: string;
+  href?: string;
 };
 
 export type ExploreTopic = {
   title: string;
   description: string;
+  href?: string;
 };
 
 export const TIER_LIMITS: Record<

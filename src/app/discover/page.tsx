@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import { BookOpen, Globe, Heart, TrendingUp, Zap } from "@/components/Icons";
 import { api } from "@/lib/api";
@@ -18,41 +19,46 @@ const iconMap: Record<string, CardIcon> = {
 
 const fallbackTrending: TrendingTopic[] = [
   {
-    title: "AI Daily Newsletter",
+    title: "Tech & AI",
     description:
-      "Breaking developments in artificial intelligence and machine learning.",
+      "The latest AI model launches, chipmakers, and product releases.",
     tag: "Trending",
-    category: "Tech/AI",
+    category: "Technology",
+    href: "/setup",
   },
   {
-    title: "Market Pulse",
+    title: "Stock Market",
     description:
-      "Real-time updates on global financial markets and trading insights.",
-    tag: "Hot",
+      "Track your tickers and indexes with live quotes and market context.",
+    tag: "Popular",
     category: "Finance",
+    href: "/setup",
   },
   {
-    title: "Climate Tech Weekly",
-    description:
-      "Latest innovations in sustainable technology and green energy.",
-    tag: "Featured",
-    category: "Environment",
+    title: "Sports",
+    description: "Your exact teams — scores, roster moves, and matchups.",
+    tag: "Popular",
+    category: "Sports",
+    href: "/setup",
   },
 ];
 
 const fallbackExplore: ExploreTopic[] = [
   {
-    title: "History Facts & Stories",
-    description: "Quick, fascinating stories from different eras and cultures.",
+    title: "Fun Facts",
+    description: "A rotating set of genuinely interesting facts you can tune.",
+    href: "/setup",
   },
   {
-    title: "Personal Finance Tips",
+    title: "Personal Finance",
     description:
       "Practical advice for budgeting, saving, and smarter money habits.",
+    href: "/setup",
   },
   {
     title: "Motivational Quotes & Stories",
     description: "Uplifting quotes and short stories to boost your day.",
+    href: "/setup",
   },
 ];
 
@@ -62,15 +68,20 @@ function TrendingCard({
   description,
   tag,
   category,
+  href,
 }: {
   icon: CardIcon;
   title: string;
   description: string;
   tag: string;
   category: string;
+  href?: string;
 }) {
   return (
-    <div className="snap-center shrink-0 w-72 bg-white rounded-3xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800">
+    <Link
+      href={href || "/setup"}
+      className="snap-center shrink-0 w-72 bg-white rounded-3xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 hover:-translate-y-1 transition-all dark:bg-slate-900 dark:border-slate-800"
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="w-11 h-11 bg-primary/10 rounded-2xl flex items-center justify-center">
           <Icon className="text-primary" size={22} />
@@ -88,7 +99,7 @@ function TrendingCard({
       <span className="text-xs text-gray-500 font-bold dark:text-gray-400">
         {category}
       </span>
-    </div>
+    </Link>
   );
 }
 
@@ -96,13 +107,18 @@ function ExploreCard({
   icon: Icon,
   title,
   description,
+  href,
 }: {
   icon: CardIcon;
   title: string;
   description: string;
+  href?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800">
+    <Link
+      href={href || "/setup"}
+      className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800"
+    >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
           <Icon className="text-primary" size={20} />
@@ -116,7 +132,7 @@ function ExploreCard({
           </p>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -178,6 +194,7 @@ export default function DiscoverPage() {
                 description={topic.description}
                 tag={topic.tag}
                 category={topic.category}
+                href={topic.href}
                 icon={Zap}
               />
             ))}
@@ -201,6 +218,7 @@ export default function DiscoverPage() {
                 key={item.title}
                 title={item.title}
                 description={item.description}
+                href={item.href}
                 icon={BookOpen}
               />
             ))}
