@@ -40,6 +40,108 @@
   .tag-chip-unselected {
     @apply bg-white border-2 border-gray-200 text-gray-700 hover:border-primary dark:bg-slate-900 dark:border-slate-800 dark:text-gray-200;
   }
+
+  /* Premium CTA: gradient fill, brand-colored glow, and a sheen that sweeps
+     across on hover. Feels weightier than a flat button without being loud. */
+  .btn-premium {
+    @apply relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white transition-all duration-300;
+    background-image: linear-gradient(120deg, #1CB0F6 0%, #0891d1 100%);
+    box-shadow:
+      0 10px 30px -8px rgba(28, 176, 246, 0.55),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  }
+  .btn-premium:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 18px 40px -10px rgba(28, 176, 246, 0.7),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  }
+  .btn-premium:active {
+    transform: translateY(0);
+  }
+  .btn-premium::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      100deg,
+      transparent,
+      rgba(255, 255, 255, 0.45),
+      transparent
+    );
+    transform: skewX(-20deg);
+  }
+  .btn-premium:hover::after {
+    animation: sheen 0.9s ease;
+  }
+
+  .btn-ghost-premium {
+    @apply rounded-2xl border px-7 py-3.5 text-sm font-bold transition-all duration-300;
+    @apply border-slate-300 text-slate-700 hover:border-primary hover:text-primary;
+    @apply dark:border-slate-700 dark:text-slate-200 dark:hover:border-primary dark:hover:text-white;
+    backdrop-filter: blur(6px);
+  }
+  .btn-ghost-premium:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Animated brand gradient headline text. */
+  .text-gradient-brand {
+    background-image: linear-gradient(120deg, #1CB0F6, #6ad0ff, #0891d1, #1CB0F6);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-pan 8s ease infinite;
+  }
+}
+
+/* Animation utilities kept outside @layer so they are never purged, even when
+   a class name is composed at runtime. */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+/* Stagger helpers for sequenced entrances. */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.06); }
+}
+
+@keyframes sheen {
+  0% { left: -75%; }
+  100% { left: 130%; }
 }
 
 .themed-discover-scrollbar {
