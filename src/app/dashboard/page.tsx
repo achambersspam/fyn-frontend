@@ -174,13 +174,19 @@ function DashboardPage() {
 
   const togglePause = async (nl: Newsletter) => {
     setTogglingPause(nl.id);
+    // Optimistic: flip immediately so the button responds on tap, then reconcile
+    // with the server. Revert if the request fails.
+    const previousPaused = nl.paused;
+    setNewsletters((prev) =>
+      prev.map((n) => (n.id === nl.id ? { ...n, paused: !previousPaused } : n))
+    );
     try {
       await api.patch(`/api/newsletters/${nl.id}/pause`);
-      setNewsletters((prev) =>
-        prev.map((n) => (n.id === nl.id ? { ...n, paused: !n.paused } : n))
-      );
     } catch {
-      /* silent */
+      setNewsletters((prev) =>
+        prev.map((n) => (n.id === nl.id ? { ...n, paused: previousPaused } : n))
+      );
+      setError("Couldn't update your newsletter. Please try again.");
     } finally {
       setTogglingPause(null);
     }
