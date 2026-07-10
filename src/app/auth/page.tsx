@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { Eye, EyeOff } from "@/components/Icons";
@@ -26,6 +27,8 @@ export default function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [oauthProvider, setOauthProvider] = useState<"google" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -272,6 +275,37 @@ export default function AuthPage() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    const email = formData.email.trim();
+    setError(null);
+    setResetMessage(null);
+    if (validators.email(email)) {
+      setError("Enter your email above and we'll send a password reset link.");
+      validation.handleBlur("email");
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/reset`
+          : undefined;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      if (resetError) throw resetError;
+      setResetMessage("Password reset link sent. Check your email to continue.");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Unable to send reset link. Please try again.";
+      setError(message);
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   const handleOAuth = async (provider: "google") => {
     if (oauthProvider) return;
     setupBackBypassRef.current = false;
@@ -393,6 +427,12 @@ export default function AuthPage() {
               </div>
             )}
 
+            {resetMessage && (
+              <div className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">
+                {resetMessage}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isSubmitting}
@@ -404,6 +444,31 @@ export default function AuthPage() {
                   ? "SIGN IN"
                   : "CREATE ACCOUNT"}
             </button>
+
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={isSubmitting || isSendingReset}
+                className="w-full text-sm font-bold text-sky-600 hover:text-sky-700 disabled:opacity-60 dark:text-sky-400 dark:hover:text-sky-300"
+              >
+                {isSendingReset ? "SENDING RESET LINK..." : "Forgot password?"}
+              </button>
+            )}
+
+            {mode === "signup" && (
+              <p className="text-center text-xs leading-5 text-slate-500 dark:text-slate-400">
+                By creating an account you agree to the{" "}
+                <Link href="/terms" className="font-semibold text-sky-600 hover:underline">
+                  Terms of Use
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-semibold text-sky-600 hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            )}
           </form>
 
           <div className="relative">
@@ -448,6 +513,19 @@ export default function AuthPage() {
                   : "SIGN IN WITH GOOGLE"}
               </span>
             </button>
+            {mode === "signup" && (
+              <p className="text-center text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Google signups are also covered by our{" "}
+                <Link href="/terms" className="font-semibold text-sky-600 hover:underline">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-semibold text-sky-600 hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            )}
           </div>
         </div>
       </div>

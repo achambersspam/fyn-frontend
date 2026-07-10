@@ -32,7 +32,7 @@ export default function TermsPage() {
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             You agree to provide accurate information and to keep it up to date. You may
-            delete your account at any time by contacting us. Upon account deletion, your
+            delete your account at any time from Settings or by contacting us. Upon account deletion, your
             personal data will be removed in accordance with our{" "}
             <Link href="/privacy" className="text-sky-600 hover:underline">
               Privacy Policy
