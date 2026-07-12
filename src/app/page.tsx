@@ -7,20 +7,20 @@ import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
 
-// Floating decorative badges around the hero — varied float/wiggle timing so
-// the cluster reads as lively rather than synchronized, the same trick
-// Duolingo's animated hero illustrations use.
+// Floating brand imagery around the hero — real logo-library assets, not
+// generic topic icons. Varied float/wiggle timing so the cluster reads as
+// lively rather than synchronized, the same trick Duolingo's animated hero
+// illustrations use. These are placeholders for the Higgsfield-animated
+// versions of the same logos, coming next.
 const HERO_FLOATERS: Array<{
-  icon: string;
+  src: string;
+  alt: string;
   className: string;
   anim: string;
 }> = [
-  { icon: "📈", className: "left-[6%] top-[12%] bg-emerald-100 dark:bg-emerald-900/40", anim: "animate-float-a" },
-  { icon: "⛅", className: "right-[8%] top-[8%] bg-sky-100 dark:bg-sky-900/40", anim: "animate-float-b delay-200" },
-  { icon: "🏈", className: "left-[2%] bottom-[18%] bg-amber-100 dark:bg-amber-900/40", anim: "animate-wiggle delay-100" },
-  { icon: "₿", className: "right-[4%] bottom-[22%] bg-orange-100 dark:bg-orange-900/40", anim: "animate-float-c delay-300" },
-  { icon: "🧩", className: "left-[14%] top-[62%] bg-violet-100 dark:bg-violet-900/40", anim: "animate-bounce-soft delay-400" },
-  { icon: "✨", className: "right-[16%] top-[58%] bg-pink-100 dark:bg-pink-900/40", anim: "animate-float-a delay-500" },
+  { src: "/pigeon-outline.svg", alt: "", className: "left-[8%] top-[10%] bg-sky-100 dark:bg-sky-900/40", anim: "animate-float-a" },
+  { src: "/logo-envelope.png", alt: "", className: "right-[8%] top-[10%] bg-white dark:bg-slate-800", anim: "animate-float-b delay-200" },
+  { src: "/pigeon-filled.svg", alt: "", className: "left-[4%] bottom-[16%] bg-amber-50 dark:bg-slate-800", anim: "animate-wiggle delay-100" },
 ];
 
 export default function LandingPage() {
@@ -93,11 +93,11 @@ export default function LandingPage() {
             />
             {HERO_FLOATERS.map((floater) => (
               <span
-                key={floater.icon}
+                key={floater.src}
                 aria-hidden
-                className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-lg ${floater.anim} ${floater.className}`}
+                className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl p-2 shadow-lg ${floater.anim} ${floater.className}`}
               >
-                {floater.icon}
+                <img src={floater.src} alt={floater.alt} className="h-full w-full object-contain" />
               </span>
             ))}
           </div>
@@ -161,10 +161,15 @@ export default function LandingPage() {
           </h2>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {[
-              ["1", "Choose your topics", "Select only the sections you want in your newsletter."],
-              ["2", "Add details that make it yours", "Pick subtopics, symbols, teams, cities, and preference presets."],
-              ["3", "Receive in app and email", "Read from your dashboard and get the same issue in your inbox."],
-            ].map(([step, title, body]) => (
+              ["1", "Choose your topics", "Select only the sections you want in your newsletter.", null],
+              [
+                "2",
+                "Add details that make it yours",
+                "Pick subtopics, symbols, teams, cities, and preference presets.",
+                "/logo-pigeon-instructions-details.svg",
+              ],
+              ["3", "Receive in app and email", "Read from your dashboard and get the same issue in your inbox.", null],
+            ].map(([step, title, body, image]) => (
               <article
                 key={step}
                 className="group relative rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 dark:border-slate-800 dark:bg-slate-900"
@@ -174,6 +179,14 @@ export default function LandingPage() {
                 </span>
                 <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{body}</p>
+                {image && (
+                  <img
+                    src={image}
+                    alt=""
+                    aria-hidden
+                    className="animate-float-a mt-4 h-24 w-24 object-contain"
+                  />
+                )}
               </article>
             ))}
           </div>
@@ -240,15 +253,11 @@ export default function LandingPage() {
                 aria-hidden
                 className="animate-glow-pulse absolute inset-0 mx-auto h-48 w-48 rounded-full bg-primary/20 blur-3xl"
               />
-              <div className="animate-float-b relative flex h-40 w-40 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary-dark text-6xl shadow-2xl shadow-primary/25">
-                🐦
-                <span className="animate-wiggle absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow-lg">
-                  ✉️
-                </span>
-                <span className="animate-bounce-soft delay-300 absolute -bottom-4 -left-4 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400 text-sm font-black text-white shadow-lg">
-                  1
-                </span>
-              </div>
+              <img
+                src="/logo-envelope.png"
+                alt="The For You Newsletter pigeon delivering your daily issue by email"
+                className="animate-float-b relative h-48 w-48 object-contain drop-shadow-xl"
+              />
             </div>
           </div>
         </section>
@@ -283,9 +292,12 @@ export default function LandingPage() {
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark px-8 py-14 text-center shadow-2xl shadow-primary/25">
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
             <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-            <span aria-hidden className="animate-float-a absolute left-[10%] top-6 text-3xl opacity-80">📈</span>
-            <span aria-hidden className="animate-wiggle absolute right-[12%] top-10 text-3xl opacity-80">⛅</span>
-            <span aria-hidden className="animate-bounce-soft absolute bottom-8 left-[16%] text-3xl opacity-80">🏈</span>
+            <img
+              src="/pigeon-outline.svg"
+              alt=""
+              aria-hidden
+              className="animate-float-a absolute left-[10%] top-6 h-10 w-10 opacity-80"
+            />
             <video
               src="/pigeon-wave.mp4"
               autoPlay
