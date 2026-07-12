@@ -44,62 +44,65 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <PublicSiteNav settingsHref={settingsHref} />
       <main>
-        {/* ================= HERO — centered, Duolingo-style ================= */}
-        <section className="relative overflow-hidden pb-40 pt-16 sm:pb-48">
-          <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center sm:px-6">
-            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-primary-dark dark:text-sky-300">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </span>
-              Personalized AI Newsletter
-            </p>
-            <h1 className="animate-fade-up delay-100 mt-5 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
-              News that&apos;s{" "}
-              <span className="text-gradient-brand">actually for you.</span>
-            </h1>
-            <p className="animate-fade-up delay-200 mt-5 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-              Pick the topics and the exact details you care about. Every day our
-              pigeon delivers one clean, focused digest — to your inbox and your
-              dashboard. No noise, no filler.
-            </p>
-            <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link href="/auth" className="btn-premium">
-                Get Started — it&apos;s free
-              </Link>
-              <Link href="/auth?mode=signin" className="btn-ghost-premium">
-                Log In
-              </Link>
-            </div>
-            <p className="animate-fade-up delay-500 mt-3 text-xs font-medium text-slate-400 dark:text-slate-500">
-              No credit card required · Cancel anytime
-            </p>
-          </div>
-
-          {/* Waving pigeon centerpiece + floating topic badges */}
-          <div className="animate-fade-up delay-300 relative mx-auto mt-14 h-64 w-full max-w-2xl px-4 sm:h-80">
-            <div
-              aria-hidden
-              className="animate-glow-pulse absolute inset-0 mx-auto h-56 w-56 rounded-full bg-primary/25 blur-3xl sm:h-72 sm:w-72"
-            />
-            <video
-              src="/pigeon-wave.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              aria-label="The For You Newsletter pigeon mascot waving hello"
-              className="relative z-10 mx-auto h-56 w-56 rounded-3xl object-cover drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)] sm:h-72 sm:w-72"
-            />
-            {HERO_FLOATERS.map((floater) => (
-              <span
-                key={floater.src}
+        {/* ================= HERO — video left, text right (Duolingo split) ================= */}
+        <section className="relative overflow-hidden pb-24 pt-16 sm:pb-32">
+          <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            {/* Video: first in DOM so it shows on top on mobile, left column on desktop */}
+            <div className="order-1 relative mx-auto w-full max-w-xl lg:mx-0">
+              <div
                 aria-hidden
-                className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl p-2 shadow-lg ${floater.anim} ${floater.className}`}
-              >
-                <img src={floater.src} alt={floater.alt} className="h-full w-full object-contain" />
-              </span>
-            ))}
+                className="animate-glow-pulse absolute inset-0 mx-auto h-56 w-56 rounded-full bg-primary/25 blur-3xl sm:h-72 sm:w-72"
+              />
+              <video
+                src="/pigeon-wave.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-label="The For You Newsletter pigeon mascot waving hello"
+                className="animate-fade-up delay-200 relative z-10 mx-auto aspect-video w-full rounded-3xl object-cover drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
+              />
+              {HERO_FLOATERS.map((floater) => (
+                <span
+                  key={floater.src}
+                  aria-hidden
+                  className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl p-2 shadow-lg ${floater.anim} ${floater.className}`}
+                >
+                  <img src={floater.src} alt={floater.alt} className="h-full w-full object-contain" />
+                </span>
+              ))}
+            </div>
+
+            {/* Text: second in DOM so it shows below on mobile, right column on desktop */}
+            <div className="order-2 text-center lg:text-left">
+              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-primary-dark dark:text-sky-300">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                Personalized AI Newsletter
+              </p>
+              <h1 className="animate-fade-up delay-100 mt-5 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
+                News that&apos;s{" "}
+                <span className="text-gradient-brand">actually for you.</span>
+              </h1>
+              <p className="animate-fade-up delay-200 mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
+                Pick the topics and the exact details you care about. Every day our
+                pigeon delivers one clean, focused digest — to your inbox and your
+                dashboard. No noise, no filler.
+              </p>
+              <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+                <Link href="/auth" className="btn-premium">
+                  Get Started — it&apos;s free
+                </Link>
+                <Link href="/auth?mode=signin" className="btn-ghost-premium">
+                  Log In
+                </Link>
+              </div>
+              <p className="animate-fade-up delay-500 mt-3 text-xs font-medium text-slate-400 dark:text-slate-500">
+                No credit card required · Cancel anytime
+              </p>
+            </div>
           </div>
 
           {/* Curved color transition into the next section, Duolingo-hill style */}
@@ -120,7 +123,7 @@ export default function LandingPage() {
           </svg>
         </section>
 
-        {/* ================= GLOBE SECTION — moved here per spec ================= */}
+        {/* ================= GLOBE SECTION — alternates: text left, globe right ================= */}
         <section className="relative overflow-hidden bg-slate-950 py-20">
           <div
             aria-hidden
@@ -131,10 +134,7 @@ export default function LandingPage() {
             }}
           />
           <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div className="order-2 flex justify-center lg:order-1 lg:justify-start">
-              <RotatingGlobe maxSize={420} />
-            </div>
-            <div className="order-1 text-center lg:order-2 lg:text-left">
+            <div className="order-2 text-center lg:order-1 lg:text-left">
               <h2 className="animate-fade-up text-4xl font-black leading-tight text-white sm:text-5xl">
                 News around the world,{" "}
                 <span className="text-gradient-brand">for you.</span>
@@ -150,6 +150,9 @@ export default function LandingPage() {
               >
                 Get Started — it&apos;s free
               </Link>
+            </div>
+            <div className="order-1 flex justify-center lg:order-2 lg:justify-end">
+              <RotatingGlobe maxSize={420} />
             </div>
           </div>
         </section>
