@@ -6,7 +6,22 @@ import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
-import Logo from "@/components/Logo";
+
+// Floating decorative badges around the hero — varied float/wiggle timing so
+// the cluster reads as lively rather than synchronized, the same trick
+// Duolingo's animated hero illustrations use.
+const HERO_FLOATERS: Array<{
+  icon: string;
+  className: string;
+  anim: string;
+}> = [
+  { icon: "📈", className: "left-[6%] top-[12%] bg-emerald-100 dark:bg-emerald-900/40", anim: "animate-float-a" },
+  { icon: "⛅", className: "right-[8%] top-[8%] bg-sky-100 dark:bg-sky-900/40", anim: "animate-float-b delay-200" },
+  { icon: "🏈", className: "left-[2%] bottom-[18%] bg-amber-100 dark:bg-amber-900/40", anim: "animate-wiggle delay-100" },
+  { icon: "₿", className: "right-[4%] bottom-[22%] bg-orange-100 dark:bg-orange-900/40", anim: "animate-float-c delay-300" },
+  { icon: "🧩", className: "left-[14%] top-[62%] bg-violet-100 dark:bg-violet-900/40", anim: "animate-bounce-soft delay-400" },
+  { icon: "✨", className: "right-[16%] top-[58%] bg-pink-100 dark:bg-pink-900/40", anim: "animate-float-a delay-500" },
+];
 
 export default function LandingPage() {
   const [settingsHref, setSettingsHref] = useState("/auth?mode=signin");
@@ -26,125 +41,122 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <PublicSiteNav settingsHref={settingsHref} />
       <main>
-        {/* Globe hero — 50/50 split: brand + one-liner left, earth right */}
-        <section className="relative overflow-hidden bg-slate-950">
+        {/* ================= HERO — centered, Duolingo-style ================= */}
+        <section className="relative overflow-hidden pb-40 pt-16 sm:pb-48">
+          <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center sm:px-6">
+            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-primary-dark dark:text-sky-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Personalized AI Newsletter
+            </p>
+            <h1 className="animate-fade-up delay-100 mt-5 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
+              News that&apos;s{" "}
+              <span className="text-gradient-brand">actually for you.</span>
+            </h1>
+            <p className="animate-fade-up delay-200 mt-5 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+              Pick the topics and the exact details you care about. Every day our
+              pigeon delivers one clean, focused digest — to your inbox and your
+              dashboard. No noise, no filler.
+            </p>
+            <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4">
+              <Link href="/auth" className="btn-premium">
+                Get Started — it&apos;s free
+              </Link>
+              <Link href="/auth?mode=signin" className="btn-ghost-premium">
+                Log In
+              </Link>
+            </div>
+            <p className="animate-fade-up delay-500 mt-3 text-xs font-medium text-slate-400 dark:text-slate-500">
+              No credit card required · Cancel anytime
+            </p>
+          </div>
+
+          {/* Waving pigeon centerpiece + floating topic badges */}
+          <div className="animate-fade-up delay-300 relative mx-auto mt-14 h-64 w-full max-w-2xl px-4 sm:h-80">
+            <div
+              aria-hidden
+              className="animate-glow-pulse absolute inset-0 mx-auto h-56 w-56 rounded-full bg-primary/25 blur-3xl sm:h-72 sm:w-72"
+            />
+            <video
+              src="/pigeon-wave.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              aria-label="The For You Newsletter pigeon mascot waving hello"
+              className="relative z-10 mx-auto h-56 w-56 rounded-3xl object-cover drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)] sm:h-72 sm:w-72"
+            />
+            {HERO_FLOATERS.map((floater) => (
+              <span
+                key={floater.icon}
+                aria-hidden
+                className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-lg ${floater.anim} ${floater.className}`}
+              >
+                {floater.icon}
+              </span>
+            ))}
+          </div>
+
+          {/* Curved color transition into the next section, Duolingo-hill style */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-primary/10 dark:to-primary/15"
+          />
+          <svg
+            aria-hidden
+            viewBox="0 0 1440 120"
+            preserveAspectRatio="none"
+            className="absolute inset-x-0 bottom-0 h-24 w-full text-slate-950"
+          >
+            <path
+              fill="currentColor"
+              d="M0,64 C240,120 480,0 720,32 C960,64 1200,120 1440,64 L1440,120 L0,120 Z"
+            />
+          </svg>
+        </section>
+
+        {/* ================= GLOBE SECTION — moved here per spec ================= */}
+        <section className="relative overflow-hidden bg-slate-950 py-20">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at 72% 55%, rgba(28,176,246,0.22), transparent 60%)",
+                "radial-gradient(ellipse at 50% 40%, rgba(28,176,246,0.22), transparent 60%)",
             }}
           />
-          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-left">
-              <Logo variant="envelope" className="h-24 w-24 animate-fade-up" />
-              <h1 className="animate-fade-up delay-100 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">
-                News Around the World{" "}
-                <span className="text-gradient-brand">For You</span>
-              </h1>
-              <p className="animate-fade-up delay-200 max-w-md text-lg text-slate-300">
-                One personalized daily newsletter — your topics, your teams,
-                your cities — delivered by our pigeon to your inbox and
-                dashboard.
-              </p>
+          <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div className="order-2 flex justify-center lg:order-1 lg:justify-start">
+              <RotatingGlobe maxSize={420} />
             </div>
-            <div className="animate-fade-up delay-200 flex justify-center lg:justify-end">
-              <RotatingGlobe size={420} />
-            </div>
-          </div>
-        </section>
-
-        {/* Hero */}
-        <section className="relative overflow-hidden">
-          {/* Ambient brand glow behind the hero */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px] dark:bg-primary/25"
-          />
-          <div className="relative mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
-            <div className="space-y-6">
-              <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-primary-dark dark:text-sky-300">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-                Personalized AI Newsletter
-              </p>
-              <h2 className="animate-fade-up delay-100 text-5xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
-                News that is{" "}
-                <span className="text-gradient-brand">actually for you.</span>
+            <div className="order-1 text-center lg:order-2 lg:text-left">
+              <h2 className="animate-fade-up text-4xl font-black leading-tight text-white sm:text-5xl">
+                News around the world,{" "}
+                <span className="text-gradient-brand">for you.</span>
               </h2>
-              <p className="animate-fade-up delay-200 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-                Pick the topics and the exact details you care about. Every day our
-                pigeon delivers one clean, focused digest — to your inbox and your
-                dashboard. No noise, no filler.
+              <p className="animate-fade-up delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-300 lg:mx-0">
+                Your teams, your cities, your coins — wherever they are on the
+                map. One personalized briefing, delivered daily, built from
+                verified sources around the globe.
               </p>
-              <div className="animate-fade-up delay-300 flex flex-wrap items-center gap-4 pt-1">
-                <Link href="/auth" className="btn-premium">
-                  Get Started — it&apos;s free
-                </Link>
-                <Link href="/auth?mode=signin" className="btn-ghost-premium">
-                  Log In
-                </Link>
-              </div>
-              <p className="animate-fade-up delay-500 text-xs font-medium text-slate-400 dark:text-slate-500">
-                No credit card required · Cancel anytime
-              </p>
-            </div>
-
-            {/* Pigeon mascot + floating newsletter preview */}
-            <div className="animate-fade-up delay-200 relative mx-auto w-full max-w-md">
-              <div
-                aria-hidden
-                className="animate-glow-pulse absolute inset-0 -z-10 rounded-full bg-primary/30 blur-3xl"
-              />
-              <div className="animate-float">
-                <img
-                  src="/pigeon-filled.svg"
-                  alt="The For You Newsletter pigeon mascot"
-                  className="mx-auto h-40 w-40 drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
-                />
-              </div>
-              <div className="mt-2 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-2xl shadow-primary/10 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  <span className="ml-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Your Daily Issue
-                  </span>
-                </div>
-                <div className="mt-4 space-y-2.5 text-sm text-slate-700 dark:text-slate-200">
-                  {[
-                    ["📈", "Stock Market", "NVDA, TSLA + Japanese market focus", "delay-300"],
-                    ["⛅", "Weather", "Charlotte · Atlanta · Scottsdale", "delay-400"],
-                    ["🏈", "Sports", "Falcons, Hawks, Georgia Football", "delay-500"],
-                  ].map(([icon, title, detail, delay]) => (
-                    <div
-                      key={title}
-                      className={`animate-fade-up flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70 ${delay}`}
-                    >
-                      <span className="text-base leading-6">{icon}</span>
-                      <span>
-                        <span className="font-bold text-slate-900 dark:text-slate-100">
-                          {title}:
-                        </span>{" "}
-                        <span className="text-slate-600 dark:text-slate-300">{detail}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Link
+                href="/auth"
+                className="animate-fade-up delay-200 mt-7 inline-flex rounded-2xl bg-white px-7 py-3.5 text-sm font-bold text-slate-900 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                Get Started — it&apos;s free
+              </Link>
             </div>
           </div>
         </section>
 
+        {/* ================= HOW IT WORKS ================= */}
         <section id="how-it-works" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+          <h2 className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
             How It Works
           </h2>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
@@ -167,52 +179,121 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="about" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100">About Us</h2>
-            <p className="mt-4 max-w-3xl text-slate-600 dark:text-slate-300">
-              For You Newsletter exists to deliver personalized updates without noise. We focus on helping
-              people follow exactly what matters to them in a format they can read quickly every day.
-            </p>
+        {/* ================= ALTERNATING FEATURE: grounded output ================= */}
+        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+            <div className="relative mx-auto flex w-full max-w-sm justify-center">
+              <div
+                aria-hidden
+                className="animate-glow-pulse absolute inset-0 mx-auto h-48 w-48 rounded-full bg-primary/20 blur-3xl"
+              />
+              <div className="relative w-full rounded-3xl border border-slate-200/80 bg-white p-5 shadow-2xl shadow-primary/10 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  <span className="ml-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Tech &amp; AI
+                  </span>
+                </div>
+                <div className="mt-4 space-y-2.5 text-sm text-slate-700 dark:text-slate-200">
+                  <p className="leading-relaxed">
+                    Meta launched new AI coding tools to rival Anthropic and
+                    OpenAI, while the Commerce Department extended export
+                    controls on advanced models.
+                  </p>
+                  <div className="animate-bounce-soft inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Grounded in named sources
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="text-center lg:text-left">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+                Real sources. No filler.
+              </h2>
+              <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0 mx-auto">
+                Every summary is grounded in verified reporting — named
+                publications, real events, real numbers. When the news is
+                thin, we say so honestly instead of padding it out.
+              </p>
+            </div>
           </div>
         </section>
 
+        {/* ================= ALTERNATING FEATURE: daily delivery ================= */}
         <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-            Feature Highlights
-          </h2>
-          <ul className="mt-8 grid gap-4 text-sm text-slate-700 dark:text-slate-300 md:grid-cols-2">
-            {[
-              "Personalized topic and detail selection",
-              "In-app dashboard and email delivery",
-              "Stock, weather, sports, crypto, and more",
-              "Readable summaries with structure and context",
-            ].map((feature) => (
-              <li
-                key={feature}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 transition-all hover:border-primary/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+            <div className="order-2 text-center lg:order-1 lg:text-left">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+                Delivered your way, every day.
+              </h2>
+              <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0 mx-auto">
+                Set your delivery time and your pigeon takes it from there —
+                the same issue waiting in your dashboard and your inbox, ready
+                the moment you want it.
+              </p>
+            </div>
+            <div className="order-1 relative mx-auto flex w-full max-w-sm justify-center lg:order-2">
+              <div
+                aria-hidden
+                className="animate-glow-pulse absolute inset-0 mx-auto h-48 w-48 rounded-full bg-primary/20 blur-3xl"
+              />
+              <div className="animate-float-b relative flex h-40 w-40 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary-dark text-6xl shadow-2xl shadow-primary/25">
+                🐦
+                <span className="animate-wiggle absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow-lg">
+                  ✉️
                 </span>
-                <span className="font-medium">{feature}</span>
-              </li>
-            ))}
-          </ul>
+                <span className="animate-bounce-soft delay-300 absolute -bottom-4 -left-4 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400 text-sm font-black text-white shadow-lg">
+                  1
+                </span>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* Closing CTA band */}
+        {/* ================= FEATURE HIGHLIGHT TILES ================= */}
+        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+          <h2 className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+            Everything, exactly the way you want it
+          </h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {[
+              ["🎯", "Personalized topic and detail selection", "bg-sky-100 dark:bg-sky-900/40"],
+              ["📬", "In-app dashboard and email delivery", "bg-emerald-100 dark:bg-emerald-900/40"],
+              ["📊", "Stock, weather, sports, crypto, and more", "bg-amber-100 dark:bg-amber-900/40"],
+              ["🧠", "Readable summaries with structure and context", "bg-violet-100 dark:bg-violet-900/40"],
+            ].map(([icon, feature, bg]) => (
+              <div
+                key={feature}
+                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+              >
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${bg}`}>
+                  {icon}
+                </span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{feature}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ================= CLOSING CTA ================= */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark px-8 py-14 text-center shadow-2xl shadow-primary/25">
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
             <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-            <img
-              src="/pigeon-filled.svg"
-              alt=""
+            <span aria-hidden className="animate-float-a absolute left-[10%] top-6 text-3xl opacity-80">📈</span>
+            <span aria-hidden className="animate-wiggle absolute right-[12%] top-10 text-3xl opacity-80">⛅</span>
+            <span aria-hidden className="animate-bounce-soft absolute bottom-8 left-[16%] text-3xl opacity-80">🏈</span>
+            <video
+              src="/pigeon-wave.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
               aria-hidden
-              className="mx-auto mb-5 h-16 w-16 drop-shadow-lg"
+              className="relative z-10 mx-auto mb-5 h-20 w-20 rounded-2xl object-cover drop-shadow-lg"
             />
             <h2 className="relative text-3xl font-black text-white sm:text-4xl">
               Your newsletter is waiting.

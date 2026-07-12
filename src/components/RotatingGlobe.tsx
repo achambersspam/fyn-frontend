@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Rotating wireframe globe drawn in hollow white lines on a canvas:
@@ -58,8 +58,10 @@ const CONTINENTS: number[][][] = [
     [-16, 18], [-17, 21], [-15, 24], [-13, 27], [-10, 29], [-9, 31],
     [-6, 35],
   ],
-  // Europe — Iberia → Mediterranean (Italy boot, Adriatic, Greece) →
-  // Aegean/Black Sea → up the Russian steppe to the White Sea →
+  // Eurasia — one continuous landmass as on a real map (no artificial
+  // Europe/Asia border line): Iberia → Mediterranean (Italy boot, Adriatic,
+  // Greece) → Black Sea → Anatolia → Arabia → India → Southeast Asia →
+  // China coast → Kamchatka → Bering → Arctic Siberian coast → White Sea →
   // Scandinavian peninsula → Baltic → Denmark → North Sea → Atlantic
   [
     [-9, 43], [-9, 41], [-9, 38], [-7, 37], [-5, 36], [-2, 37], [0, 39],
@@ -69,32 +71,26 @@ const CONTINENTS: number[][][] = [
     [19, 42], [19, 40], [20, 39], [21, 37], [22, 36], [23, 37], [23, 38],
     [24, 38], [23, 39], [23, 40], [25, 40], [26, 40], [28, 41], [29, 41],
     [28, 43], [30, 45], [32, 46], [35, 46], [37, 45], [38, 47], [40, 47],
-    [44, 47], [48, 46], [49, 49], [50, 52], [49, 55], [46, 57], [43, 59],
-    [40, 61], [38, 64], [40, 66], [37, 66], [33, 66], [31, 63], [30, 60],
+    [44, 47], [48, 46], [48, 42], [44, 39], [40, 38], [36, 36], [36, 32],
+    [36, 28], [35, 24], [38, 21], [40, 18], [42, 15], [44, 13], [48, 14],
+    [52, 15], [55, 17], [58, 20], [55, 23], [52, 25], [54, 26], [57, 26],
+    [58, 24], [61, 25], [64, 25], [67, 24], [68, 23], [71, 20], [73, 16],
+    [75, 11], [77, 8], [78, 9], [80, 13], [82, 16], [84, 18], [86, 20],
+    [88, 22], [91, 22], [94, 18], [96, 16], [98, 12], [98, 8], [101, 4],
+    [104, 2], [105, 9], [107, 12], [108, 17], [110, 20], [114, 22],
+    [118, 25], [121, 28], [122, 31], [126, 35], [129, 36], [132, 40],
+    [135, 43], [138, 44], [143, 46], [151, 47], [156, 51], [158, 52],
+    [160, 53], [162, 56], [165, 58], [170, 60], [174, 62], [179, 65],
+    [176, 66], [170, 68], [162, 70], [154, 71], [146, 72], [138, 72],
+    [130, 71], [122, 72], [114, 74], [106, 77], [98, 76], [90, 75],
+    [82, 73], [74, 72], [68, 70], [62, 69], [56, 68], [50, 68], [45, 67],
+    [40, 66], [37, 66], [33, 66], [31, 63], [30, 60],
     [28, 60], [26, 60], [25, 61], [25, 63], [26, 65], [28, 66], [26, 68],
     [25, 69], [22, 70], [19, 70], [16, 69], [14, 68], [13, 66], [12, 64],
     [10, 63], [8, 61], [6, 60], [5, 59], [7, 58], [8, 57], [10, 57],
     [12, 56], [13, 55], [11, 54], [9, 55], [8, 56], [8, 55], [7, 54],
     [5, 53], [4, 52], [2, 51], [0, 50], [-2, 50], [-4, 48], [-2, 47],
     [-1, 45], [-2, 44], [-9, 43],
-  ],
-  // Asia (Urals/Caspian join → Siberia → Kamchatka → China coast →
-  // Southeast Asia → India → Arabia → back to Caspian)
-  [
-    [48, 46], [53, 47], [58, 45], [63, 44], [68, 43], [74, 43], [80, 45],
-    [86, 47], [92, 50], [98, 52], [104, 52], [110, 53], [116, 53],
-    [122, 53], [128, 52], [134, 53], [140, 54], [145, 59], [150, 60],
-    [155, 62], [160, 62], [165, 64], [170, 66], [176, 66], [179, 65],
-    [174, 62], [170, 60], [165, 58], [162, 56], [160, 53], [158, 52],
-    [156, 51], [151, 47], [143, 46], [138, 44], [135, 43], [132, 40],
-    [129, 36], [126, 35], [122, 31], [121, 28], [118, 25], [114, 22],
-    [110, 20], [108, 17], [107, 12], [105, 9], [104, 2], [101, 4],
-    [98, 8], [98, 12], [96, 16], [94, 18], [91, 22], [88, 22], [86, 20],
-    [84, 18], [82, 16], [80, 13], [78, 9], [77, 8], [75, 11], [73, 16],
-    [71, 20], [68, 23], [67, 24], [64, 25], [61, 25], [58, 24], [57, 26],
-    [54, 26], [52, 25], [55, 23], [58, 20], [55, 17], [52, 15], [48, 14],
-    [44, 13], [42, 15], [40, 18], [38, 21], [35, 24], [36, 28], [36, 32],
-    [36, 36], [40, 38], [44, 39], [48, 42], [48, 46],
   ],
   // Australia
   [
@@ -149,42 +145,67 @@ const CONTINENTS: number[][][] = [
     [109, 1], [111, 3], [114, 4], [117, 6], [119, 4], [117, 0], [114, -2],
     [111, -1], [109, 1],
   ],
+  // Antarctica — coastline ring around the pole, with the Antarctic
+  // Peninsula reaching up toward South America and the Ross Sea indent.
+  [
+    [-60, -64], [-56, -66], [-52, -69], [-45, -71], [-35, -72], [-25, -71],
+    [-15, -70], [-5, -70], [5, -70], [15, -70], [25, -69], [35, -68],
+    [45, -67], [55, -66], [65, -67], [75, -68], [85, -66], [95, -66],
+    [105, -66], [115, -66], [125, -66], [135, -66], [145, -67], [155, -69],
+    [165, -72], [172, -75], [180, -78], [-172, -78], [-164, -77],
+    [-155, -76], [-146, -75], [-138, -74], [-130, -74], [-120, -73],
+    [-110, -73], [-100, -73], [-90, -73], [-80, -72], [-72, -70],
+    [-66, -67], [-62, -65], [-60, -64],
+  ],
 ];
 
 // Major cities as [lon, lat] — rendered as gently pulsing royal-blue dots.
 const CITIES: number[][] = [
-  // North America
-  [-74, 40.7], // New York
+  // United States
+  [-74, 40.7], // New York City
   [-118.2, 34.1], // Los Angeles
-  [-87.6, 41.9], // Chicago
+  [-84.4, 34.0], // Roswell, Georgia
+  [-84.39, 33.75], // Atlanta, Georgia
+  [-80.8, 35.2], // Charlotte, North Carolina
+  // Canada
   [-79.4, 43.7], // Toronto
+  [-123.1, 49.3], // Vancouver
+  [-73.6, 45.5], // Montreal
+  // Latin America
   [-99.1, 19.4], // Mexico City
-  // South America
-  [-46.6, -23.5], // São Paulo
   [-58.4, -34.6], // Buenos Aires
-  [-74.1, 4.7], // Bogotá
   [-43.2, -22.9], // Rio de Janeiro
-  // Africa
-  [3.4, 6.5], // Lagos
-  [31.2, 30.0], // Cairo
-  [36.8, -1.3], // Nairobi
-  [28.0, -26.2], // Johannesburg
+  [-47.9, -15.8], // Brasília
   // Europe
   [-0.1, 51.5], // London
   [2.35, 48.9], // Paris
   [13.4, 52.5], // Berlin
+  [21.0, 52.2], // Warsaw
+  [12.6, 55.7], // Copenhagen
   [-3.7, 40.4], // Madrid
-  [37.6, 55.8], // Moscow
+  [12.5, 41.9], // Rome
+  [23.7, 38.0], // Athens
   [28.98, 41.0], // Istanbul
-  // Asia
+  [37.6, 55.8], // Moscow
+  // Africa
+  [28.0, -26.2], // Johannesburg
+  [18.4, -33.9], // Cape Town
+  // Middle East
   [55.3, 25.2], // Dubai
+  [46.7, 24.7], // Riyadh
+  [51.5, 25.3], // Doha
+  [35.2, 31.8], // Jerusalem
+  // Asia
   [72.9, 19.1], // Mumbai
-  [77.2, 28.6], // Delhi
+  [101.7, 3.1], // Kuala Lumpur
   [103.8, 1.35], // Singapore
-  [116.4, 39.9], // Beijing
+  [106.8, -6.2], // Jakarta
+  [121.0, 14.6], // Manila
+  [114.2, 22.3], // Hong Kong
   [121.5, 31.2], // Shanghai
+  [116.4, 39.9], // Beijing
   [127.0, 37.5], // Seoul
-  [139.7, 35.7], // Tokyo
+  [135.8, 35.0], // Kyoto
   // Oceania
   [151.2, -33.9], // Sydney
   [174.8, -36.8], // Auckland
@@ -200,10 +221,37 @@ const toSphere = (lonDeg: number, latDeg: number): Vec3 => {
   return [Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon)];
 };
 
-export default function RotatingGlobe({ size = 380 }: { size?: number }) {
+export default function RotatingGlobe({
+  size,
+  maxSize = 420,
+}: {
+  size?: number;
+  maxSize?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  // When no explicit size is passed, fill the container (a hero half-column)
+  // between a floor and maxSize so the globe always fits its half and stays a
+  // perfect circle at every breakpoint instead of overflowing on narrow views.
+  const [measured, setMeasured] = useState<number>(size ?? maxSize);
 
   useEffect(() => {
+    if (size) {
+      setMeasured(size);
+      return;
+    }
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const update = () =>
+      setMeasured(Math.max(200, Math.min(maxSize, Math.round(wrap.clientWidth))));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [size, maxSize]);
+
+  useEffect(() => {
+    const size = measured;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -327,15 +375,17 @@ export default function RotatingGlobe({ size = 380 }: { size?: number }) {
     };
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [size]);
+  }, [measured]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: size, height: size }}
-      className="mx-auto"
-      role="img"
-      aria-label="Rotating wireframe globe with continent outlines"
-    />
+    <div ref={wrapRef} className="mx-auto aspect-square w-full max-w-[420px] overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        style={{ width: measured, height: measured }}
+        className="mx-auto"
+        role="img"
+        aria-label="Rotating wireframe globe with continent outlines"
+      />
+    </div>
   );
 }
