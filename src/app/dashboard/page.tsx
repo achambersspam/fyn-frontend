@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import GenerateNowCard from "@/components/GenerateNowCard";
 import Tooltip from "@/components/Tooltip";
 import { Trophy, Clock, Pause, Play } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
@@ -343,6 +344,8 @@ function DashboardPage() {
                 );
               })}
             </div>
+
+            <GenerateNowCard newsletters={newsletters} profile={profile} />
 
             {/* Next Send / Pause */}
             <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4">

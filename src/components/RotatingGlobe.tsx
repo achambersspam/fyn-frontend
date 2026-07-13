@@ -234,6 +234,18 @@ export default function RotatingGlobe({
   // between a floor and maxSize so the globe always fits its half and stays a
   // perfect circle at every breakpoint instead of overflowing on narrow views.
   const [measured, setMeasured] = useState<number>(size ?? maxSize);
+  // Ink follows the theme: white lines on dark backgrounds, slate ink on
+  // light. Tracked via the `dark` class ThemeProvider toggles on <html>.
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => setIsDark(root.classList.contains("dark"));
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (size) {
@@ -342,19 +354,25 @@ export default function RotatingGlobe({
       }
     };
 
+    // Theme ink: white lines on dark, slate-900 ink on light.
+    const ink = isDark ? "255,255,255" : "15,23,42";
+    const silhouetteAlpha = isDark ? 0.85 : 0.7;
+    const graticuleAlpha = isDark ? 0.28 : 0.2;
+    const continentAlpha = isDark ? 0.95 : 0.85;
+
     const drawFrame = (rotation: number, timeSeconds: number) => {
       ctx.clearRect(0, 0, size, size);
       // Sphere silhouette
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.strokeStyle = `rgba(${ink},${silhouetteAlpha})`;
       ctx.lineWidth = 1.4;
       ctx.stroke();
-      // Graticule — faint hollow white lines
-      for (const line of meridians) strokePolyline(line, rotation, "rgba(255,255,255,0.28)", 0.8);
-      for (const line of parallels) strokePolyline(line, rotation, "rgba(255,255,255,0.28)", 0.8);
-      // Continents — brighter white outlines
-      for (const outline of continents) strokePolyline(outline, rotation, "rgba(255,255,255,0.95)", 1.6);
+      // Graticule — faint hollow lines
+      for (const line of meridians) strokePolyline(line, rotation, `rgba(${ink},${graticuleAlpha})`, 0.8);
+      for (const line of parallels) strokePolyline(line, rotation, `rgba(${ink},${graticuleAlpha})`, 0.8);
+      // Continents — brighter outlines
+      for (const outline of continents) strokePolyline(outline, rotation, `rgba(${ink},${continentAlpha})`, 1.6);
       // Major cities — pulsing royal-blue markers
       drawCities(rotation, timeSeconds);
     };
@@ -375,7 +393,7 @@ export default function RotatingGlobe({
     };
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [measured]);
+  }, [measured, isDark]);
 
   return (
     <div ref={wrapRef} className="mx-auto aspect-square w-full max-w-[420px] overflow-hidden">

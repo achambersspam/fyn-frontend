@@ -119,6 +119,7 @@
 .animate-float-c { animation: float 4.2s ease-in-out infinite; }
 .animate-wiggle { animation: wiggle 3.4s ease-in-out infinite; }
 .animate-bounce-soft { animation: bounce-soft 2.6s ease-in-out infinite; }
+.animate-marquee { animation: marquee 42s linear infinite; }
 /* Stagger helpers for sequenced entrances. */
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
@@ -167,6 +168,55 @@
 @keyframes sheen {
   0% { left: -75%; }
   100% { left: 130%; }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Scroll-triggered entrances: elements start hidden and slide up when an
+   IntersectionObserver adds .is-revealed as they enter the viewport, so
+   below-the-fold sections animate when seen rather than on page load. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+/* Stagger helpers for reveals (transition-delay, unlike .delay-* which are
+   animation-delay and don't affect transitions). */
+.reveal-delay-100 { transition-delay: 0.1s; }
+.reveal-delay-200 { transition-delay: 0.2s; }
+.reveal-delay-300 { transition-delay: 0.3s; }
+
+/* Reduced motion: stop every decorative animation and show reveal content
+   immediately. Scroll scrubbing and the globe handle this in JS. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-a,
+  .animate-float-b,
+  .animate-float-c,
+  .animate-wiggle,
+  .animate-bounce-soft,
+  .animate-glow-pulse,
+  .animate-marquee,
+  .animate-fade-up {
+    animation: none;
+  }
+  .animate-fade-up {
+    opacity: 1;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .themed-discover-scrollbar {

@@ -18,6 +18,7 @@ export default function PublicSiteNav({ settingsHref }: PublicSiteNavProps) {
           <Link href="/">Home</Link>
           <Link href="/about">About Us</Link>
           <Link href="/how-it-works">How It Works</Link>
+          <Link href="/#preview">Preview</Link>
           <Link href={settingsHref}>Settings</Link>
         </nav>
         <div className="flex items-center gap-2">

@@ -6,22 +6,9 @@ import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
-
-// Floating brand imagery around the hero — real logo-library assets, not
-// generic topic icons. Varied float/wiggle timing so the cluster reads as
-// lively rather than synchronized, the same trick Duolingo's animated hero
-// illustrations use. These are placeholders for the Higgsfield-animated
-// versions of the same logos, coming next.
-const HERO_FLOATERS: Array<{
-  src: string;
-  alt: string;
-  className: string;
-  anim: string;
-}> = [
-  { src: "/pigeon-outline.svg", alt: "", className: "left-[8%] top-[10%] bg-sky-100 dark:bg-sky-900/40", anim: "animate-float-a" },
-  { src: "/logo-envelope.png", alt: "", className: "right-[8%] top-[10%] bg-white dark:bg-slate-800", anim: "animate-float-b delay-200" },
-  { src: "/pigeon-filled.svg", alt: "", className: "left-[4%] bottom-[16%] bg-amber-50 dark:bg-slate-800", anim: "animate-wiggle delay-100" },
-];
+import ScrollScrubVideo from "@/components/ScrollScrubVideo";
+import SourceLogoMarquee from "@/components/SourceLogoMarquee";
+import SampleIssuePreview from "@/components/SampleIssuePreview";
 
 export default function LandingPage() {
   const [settingsHref, setSettingsHref] = useState("/auth?mode=signin");
@@ -40,6 +27,26 @@ export default function LandingPage() {
     };
   }, []);
 
+  // Reveal-on-scroll: below-the-fold elements marked with data-reveal slide
+  // in as they enter the viewport instead of animating on page load.
+  useEffect(() => {
+    const elements = document.querySelectorAll("[data-reveal]");
+    if (elements.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.15 }
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <PublicSiteNav settingsHref={settingsHref} />
@@ -54,23 +61,14 @@ export default function LandingPage() {
                 className="animate-glow-pulse absolute inset-0 mx-auto h-56 w-56 rounded-full bg-primary/25 blur-3xl sm:h-72 sm:w-72"
               />
               <video
-                src="/pigeon-wave.mp4"
+                src="/applogo-wave.mp4"
                 autoPlay
                 loop
                 muted
                 playsInline
-                aria-label="The For You Newsletter pigeon mascot waving hello"
-                className="animate-fade-up delay-200 relative z-10 mx-auto aspect-video w-full rounded-3xl object-cover drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
+                aria-label="The For You Newsletter animated logo"
+                className="animate-fade-up delay-200 relative z-10 mx-auto h-auto w-full max-w-md rounded-3xl object-contain drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
               />
-              {HERO_FLOATERS.map((floater) => (
-                <span
-                  key={floater.src}
-                  aria-hidden
-                  className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl p-2 shadow-lg ${floater.anim} ${floater.className}`}
-                >
-                  <img src={floater.src} alt={floater.alt} className="h-full w-full object-contain" />
-                </span>
-              ))}
             </div>
 
             {/* Text: second in DOM so it shows below on mobile, right column on desktop */}
@@ -114,7 +112,7 @@ export default function LandingPage() {
             aria-hidden
             viewBox="0 0 1440 120"
             preserveAspectRatio="none"
-            className="absolute inset-x-0 bottom-0 h-24 w-full text-slate-950"
+            className="absolute inset-x-0 bottom-0 h-24 w-full text-sky-50 dark:text-slate-950"
           >
             <path
               fill="currentColor"
@@ -124,29 +122,30 @@ export default function LandingPage() {
         </section>
 
         {/* ================= GLOBE SECTION — alternates: text left, globe right ================= */}
-        <section className="relative overflow-hidden bg-slate-950 py-20">
+        <section className="relative overflow-hidden bg-sky-50 py-20 dark:bg-slate-950">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 40%, rgba(28,176,246,0.22), transparent 60%)",
+                "radial-gradient(ellipse at 50% 40%, rgba(28,176,246,0.14), transparent 60%)",
             }}
           />
           <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div className="order-2 text-center lg:order-1 lg:text-left">
-              <h2 className="animate-fade-up text-4xl font-black leading-tight text-white sm:text-5xl">
+              <h2 data-reveal className="text-4xl font-black leading-tight text-slate-900 dark:text-white sm:text-5xl">
                 News around the world,{" "}
                 <span className="text-gradient-brand">for you.</span>
               </h2>
-              <p className="animate-fade-up delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-300 lg:mx-0">
+              <p data-reveal className="reveal-delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
                 Your teams, your cities, your coins — wherever they are on the
                 map. One personalized briefing, delivered daily, built from
                 verified sources around the globe.
               </p>
               <Link
+                data-reveal
                 href="/auth"
-                className="animate-fade-up delay-200 mt-7 inline-flex rounded-2xl bg-white px-7 py-3.5 text-sm font-bold text-slate-900 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="reveal-delay-200 mt-7 inline-flex rounded-2xl bg-slate-900 px-7 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-white dark:text-slate-900"
               >
                 Get Started — it&apos;s free
               </Link>
@@ -157,12 +156,20 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ================= TRUSTED SOURCES MARQUEE ================= */}
+        <section className="border-y border-slate-100 bg-white py-10 dark:border-slate-900 dark:bg-slate-950">
+          <p data-reveal className="mb-5 text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+            Grounded in real reporting from
+          </p>
+          <SourceLogoMarquee />
+        </section>
+
         {/* ================= HOW IT WORKS ================= */}
         <section id="how-it-works" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <h2 className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+          <h2 data-reveal className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
             How It Works
           </h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <div data-reveal className="reveal-delay-100 mt-8 grid gap-5 md:grid-cols-3">
             {[
               ["1", "Choose your topics", "Select only the sections you want in your newsletter.", null],
               [
@@ -195,104 +202,46 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= ALTERNATING FEATURE: grounded output ================= */}
-        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-            <div className="relative mx-auto flex w-full max-w-sm justify-center">
-              <div
-                aria-hidden
-                className="animate-glow-pulse absolute inset-0 mx-auto h-48 w-48 rounded-full bg-primary/20 blur-3xl"
-              />
-              <div className="relative w-full rounded-3xl border border-slate-200/80 bg-white p-5 shadow-2xl shadow-primary/10 dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  <span className="ml-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Tech &amp; AI
-                  </span>
-                </div>
-                <div className="mt-4 space-y-2.5 text-sm text-slate-700 dark:text-slate-200">
-                  <p className="leading-relaxed">
-                    Meta launched new AI coding tools to rival Anthropic and
-                    OpenAI, while the Commerce Department extended export
-                    controls on advanced models.
-                  </p>
-                  <div className="animate-bounce-soft inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Grounded in named sources
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* ================= SAMPLE ISSUE PREVIEW ================= */}
+        <section id="preview" className="scroll-mt-20 border-y border-slate-100 bg-slate-50 py-16 dark:border-slate-900 dark:bg-slate-950/60">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div className="text-center lg:text-left">
-              <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-                Real sources. No filler.
+              <h2 data-reveal className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
+                See what lands in your inbox.
               </h2>
-              <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0 mx-auto">
-                Every summary is grounded in verified reporting — named
-                publications, real events, real numbers. When the news is
-                thin, we say so honestly instead of padding it out.
+              <p data-reveal className="reveal-delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
+                One clean issue with only your sections — your tickers with
+                honest market notes, your team&apos;s actual score, your
+                cities&apos; forecasts. Nothing you didn&apos;t ask for.
               </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ================= ALTERNATING FEATURE: daily delivery ================= */}
-        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-            <div className="order-2 text-center lg:order-1 lg:text-left">
-              <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-                Delivered your way, every day.
-              </h2>
-              <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0 mx-auto">
-                Set your delivery time and your pigeon takes it from there —
-                the same issue waiting in your dashboard and your inbox, ready
-                the moment you want it.
-              </p>
-            </div>
-            <div className="order-1 relative mx-auto flex w-full max-w-sm justify-center lg:order-2">
-              <div
-                aria-hidden
-                className="animate-glow-pulse absolute inset-0 mx-auto h-48 w-48 rounded-full bg-primary/20 blur-3xl"
-              />
-              <img
-                src="/logo-envelope.png"
-                alt="The For You Newsletter pigeon delivering your daily issue by email"
-                className="animate-float-b relative h-48 w-48 object-contain drop-shadow-xl"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ================= FEATURE HIGHLIGHT TILES ================= */}
-        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <h2 className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-            Everything, exactly the way you want it
-          </h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {[
-              ["🎯", "Personalized topic and detail selection", "bg-sky-100 dark:bg-sky-900/40"],
-              ["📬", "In-app dashboard and email delivery", "bg-emerald-100 dark:bg-emerald-900/40"],
-              ["📊", "Stock, weather, sports, crypto, and more", "bg-amber-100 dark:bg-amber-900/40"],
-              ["🧠", "Readable summaries with structure and context", "bg-violet-100 dark:bg-violet-900/40"],
-            ].map(([icon, feature, bg]) => (
-              <div
-                key={feature}
-                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+              <Link
+                data-reveal
+                href="/auth"
+                className="reveal-delay-200 btn-premium mt-7 inline-flex"
               >
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${bg}`}>
-                  {icon}
-                </span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{feature}</span>
-              </div>
-            ))}
+                Get Started — it&apos;s free
+              </Link>
+            </div>
+            <div data-reveal className="reveal-delay-100">
+              <SampleIssuePreview />
+            </div>
           </div>
+        </section>
+
+        {/* ================= SCROLL-SCRUBBED MAILBOX ANIMATION ================= */}
+        <section className="relative overflow-hidden bg-white dark:bg-slate-950">
+          <ScrollScrubVideo src="/mailbox-pigeon.mp4">
+            <div className="text-center">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white sm:text-4xl">
+                Your pigeon is on the way.
+              </h2>
+            </div>
+          </ScrollScrubVideo>
         </section>
 
         {/* ================= CLOSING CTA ================= */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark px-8 py-14 text-center shadow-2xl shadow-primary/25">
+          <div data-reveal className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark px-8 py-14 text-center shadow-2xl shadow-primary/25">
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
             <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
             <img
