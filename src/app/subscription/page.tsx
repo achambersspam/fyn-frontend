@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
@@ -341,6 +342,19 @@ export default function SubscriptionPage() {
                 {plan.subtext && (
                   <p className="text-xs text-gray-400 text-center dark:text-gray-500">
                     {plan.subtext}
+                  </p>
+                )}
+                {plan.id !== "free" && !isCurrent(plan.id) && (
+                  <p className="text-[11px] leading-relaxed text-gray-400 text-center dark:text-gray-500">
+                    By continuing to checkout, you agree to the{" "}
+                    <Link href="/terms" className="underline hover:text-primary">
+                      Terms
+                    </Link>{" "}
+                    and acknowledge the{" "}
+                    <Link href="/privacy" className="underline hover:text-primary">
+                      Privacy Policy
+                    </Link>
+                    .
                   </p>
                 )}
               </div>

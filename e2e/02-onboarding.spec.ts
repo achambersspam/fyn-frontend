@@ -20,6 +20,8 @@ test('completes 3-step setup wizard and reaches creating page', async ({ page })
 
   // Wait for the wizard to hydrate (it loads the user session async).
   await expect(page.locator('text=Choose Your Topics')).toBeVisible({ timeout: 15_000 });
+  const step2Button = page.locator('button', { hasText: 'Go to Step 2 - Type Your Topic Details' });
+  await expect(step2Button).toBeEnabled({ timeout: 15_000 });
 
   for (const topic of TEST_TOPICS) {
     await page.locator('button', { hasText: topic.label }).first().click();
@@ -32,7 +34,7 @@ test('completes 3-step setup wizard and reaches creating page', async ({ page })
     ).toHaveClass(/border-primary/, { timeout: 5_000 });
   }
 
-  await page.locator('button', { hasText: 'Go to Step 2 - Type Your Topic Details' }).click();
+  await step2Button.click();
   await page.waitForURL('**/setup/step-2', { timeout: 10_000 });
 
   // ── Step 2: Topic details ────────────────────────────────────────────────────

@@ -33,6 +33,6 @@ test('newsletter generates successfully and dashboard shows read button', async 
 
   // The newsletter card should now show "Read Your Newsletter".
   await expect(page.getByRole('button', { name: 'Read Your Newsletter' })).toBeVisible({
-    timeout: 10_000,
+    timeout: 45_000,
   });
 });

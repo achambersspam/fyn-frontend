@@ -66,6 +66,8 @@ export default function LandingPage() {
                 loop
                 muted
                 playsInline
+                preload="none"
+                poster="/pigeon-filled.svg"
                 aria-label="The For You Newsletter animated logo"
                 className="animate-fade-up delay-200 relative z-10 mx-auto h-auto w-full max-w-md rounded-3xl object-contain drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
               />
@@ -256,6 +258,8 @@ export default function LandingPage() {
               loop
               muted
               playsInline
+              preload="none"
+              poster="/pigeon-filled.svg"
               aria-hidden
               className="relative z-10 mx-auto mb-5 h-20 w-20 rounded-2xl object-cover drop-shadow-lg"
             />

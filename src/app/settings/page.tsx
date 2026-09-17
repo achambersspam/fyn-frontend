@@ -400,6 +400,11 @@ function SettingsPage() {
                     </button>
                   </Tooltip>
                 ) : null}
+                {paidTier ? (
+                  <Link href="/subscription/cancel" className="btn-outline text-sm py-2 px-3">
+                    Cancel plan
+                  </Link>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void refreshAccount()}

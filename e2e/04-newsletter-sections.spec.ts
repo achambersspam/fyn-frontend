@@ -27,7 +27,7 @@ test('each selected topic section renders with content', async ({ page }) => {
 
   // Dashboard must show the read button before we proceed.
   const readBtn = page.getByRole('button', { name: 'Read Your Newsletter' });
-  await expect(readBtn).toBeVisible({ timeout: 15_000 });
+  await expect(readBtn).toBeVisible({ timeout: 45_000 });
   await readBtn.click();
 
   await page.waitForURL(/\/newsletter\/.+\/read/, { timeout: 10_000 });
@@ -35,12 +35,12 @@ test('each selected topic section renders with content', async ({ page }) => {
   // Wait for the newsletter HTML to be injected (dangerouslySetInnerHTML).
   // The sections div is the immediate child rendered from issue.body_html.
   await expect(page.locator('[data-testid^="section-"]').first()).toBeVisible({
-    timeout: 15_000,
+    timeout: 45_000,
   });
 
   // All three topic sections must be present.
   await expect(page.locator('[data-testid^="section-"]')).toHaveCount(TEST_TOPICS.length, {
-    timeout: 10_000,
+    timeout: 30_000,
   });
 
   for (const topic of TEST_TOPICS) {

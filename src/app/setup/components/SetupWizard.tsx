@@ -1017,11 +1017,13 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           <button
             type="button"
             onClick={openStep2}
-            disabled={navigationIntent !== null}
+            disabled={navigationIntent !== null || !isHydrated || !currentUserId}
             className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {navigationIntent === "step2"
               ? "Opening Step 2..."
+              : !isHydrated || !currentUserId
+                ? "Loading your session..."
               : "Go to Step 2 - Type Your Topic Details"}
           </button>
         )}

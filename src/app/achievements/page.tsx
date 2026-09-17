@@ -12,6 +12,21 @@ const BADGE_THRESHOLDS = [
   2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140,
 ];
 
+function BadgeIcon({ src, label, unlocked }: { src?: string | null; label: string; unlocked: boolean }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <div className="text-lg">{unlocked ? "🏅" : "🔒"}</div>;
+  }
+  return (
+    <img
+      src={src}
+      alt={label}
+      className="h-6 w-6 object-contain"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function AchievementsPage() {
   const router = useRouter();
   const [data, setData] = useState<Achievement | null>(null);
@@ -154,15 +169,7 @@ export default function AchievementsPage() {
                       }`}
                     >
                       <div className="flex justify-center">
-                        {iconUrl ? (
-                          <img
-                            src={iconUrl}
-                            alt={badge.label}
-                            className="h-6 w-6 object-contain"
-                          />
-                        ) : (
-                          <div className="text-lg">{unlocked ? "🏅" : "🔒"}</div>
-                        )}
+                        <BadgeIcon src={iconUrl} label={badge.label} unlocked={unlocked} />
                       </div>
                       <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
                         {badge.label}
