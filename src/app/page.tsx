@@ -92,7 +92,7 @@ export default function LandingPage() {
                 dashboard. No noise, no filler.
               </p>
               <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-                <Link href="/auth" className="btn-premium">
+                <Link href="/start" className="btn-premium">
                   Get Started — it&apos;s free
                 </Link>
                 <Link href="/auth?mode=signin" className="btn-ghost-premium">
@@ -146,7 +146,7 @@ export default function LandingPage() {
               </p>
               <Link
                 data-reveal
-                href="/auth"
+                href="/start"
                 className="reveal-delay-200 mt-7 inline-flex rounded-2xl bg-slate-900 px-7 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-white dark:text-slate-900"
               >
                 Get Started — it&apos;s free
@@ -218,7 +218,7 @@ export default function LandingPage() {
               </p>
               <Link
                 data-reveal
-                href="/auth"
+                href="/start"
                 className="reveal-delay-200 btn-premium mt-7 inline-flex"
               >
                 Get Started — it&apos;s free
@@ -270,7 +270,7 @@ export default function LandingPage() {
               Set it up in under two minutes. The pigeon takes it from there.
             </p>
             <Link
-              href="/auth"
+              href="/start"
               className="relative mt-7 inline-flex rounded-2xl bg-white px-8 py-3.5 text-sm font-bold text-primary-dark shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               Get Started — it&apos;s free

@@ -18,11 +18,11 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary hover:bg-primary-dark text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 active:scale-95;
+    @apply bg-primary hover:bg-primary-dark text-white font-bold py-4 px-8 rounded-xl transition-transform duration-100 transform hover:scale-105 active:scale-[0.97] disabled:transform-none;
   }
 
   .btn-outline {
-    @apply border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary font-bold py-4 px-8 rounded-xl transition-all dark:border-slate-800 dark:text-gray-200 dark:hover:text-white;
+    @apply border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary font-bold py-4 px-8 rounded-xl transition-transform duration-100 active:scale-[0.97] disabled:transform-none dark:border-slate-800 dark:text-gray-200 dark:hover:text-white;
   }
 
   .input-field {
@@ -44,7 +44,7 @@
   /* Premium CTA: gradient fill, brand-colored glow, and a sheen that sweeps
      across on hover. Feels weightier than a flat button without being loud. */
   .btn-premium {
-    @apply relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white transition-all duration-300;
+    @apply relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white transition-transform duration-100 active:scale-[0.97] disabled:transform-none;
     background-image: linear-gradient(120deg, #1CB0F6 0%, #0891d1 100%);
     box-shadow:
       0 10px 30px -8px rgba(28, 176, 246, 0.55),
@@ -239,8 +239,44 @@
   border: 2px solid #0f172a;
 }
 
-.themed-discover-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    theme("colors.slate.200") 0%,
+    theme("colors.slate.100") 50%,
+    theme("colors.slate.200") 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 2.2s ease-in-out infinite;
+}
+
+.dark .skeleton {
+  background-image: linear-gradient(
+    90deg,
+    theme("colors.slate.800") 0%,
+    theme("colors.slate.700") 50%,
+    theme("colors.slate.800") 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+  .btn-primary,
+  .btn-outline,
+  .btn-premium {
+    transform: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -16,8 +16,16 @@ import {
 } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { getCurrentSession, getSupabaseBrowserClient } from "@/lib/supabase";
-import type { CheckoutResponse, Profile, SubscriptionInfo } from "@/lib/apiContracts";
+import type {
+  CheckoutResponse,
+  Profile,
+  SubscriptionCancelResponse,
+  SubscriptionInfo,
+} from "@/lib/apiContracts";
 import { resetAnalyticsIdentity, trackEvent } from "@/lib/analytics";
+import { errorMessage } from "@/lib/errorMessage";
+import { useToast } from "@/lib/useToast";
+import Spinner from "@/components/Spinner";
 
 const SETUP_DRAFT_STORAGE_KEY = "fyn.setupDraft.v2";
 const AUTH_POST_TARGET_KEY = "auth_post_target_v1";
@@ -43,10 +51,12 @@ function SettingsPage() {
   const [isUpdatingSubscriptionState, setIsUpdatingSubscriptionState] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [isResumingSubscription, setIsResumingSubscription] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const checkoutSuccess = searchParams.get("checkout") === "success";
+  const { toast } = useToast();
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -72,8 +82,8 @@ function SettingsPage() {
         setProfile(prof);
         if (subResult.ok) {
           setSubscription(subResult.data);
-        } else if (process.env.NODE_ENV !== "production") {
-          console.warn("settings_subscription_fetch_failed", subResult.err);
+        } else {
+          toast.error(errorMessage(subResult.err, "Unable to load subscription details."));
         }
       } catch (err) {
         if (cancelled) return;
@@ -82,11 +92,9 @@ function SettingsPage() {
           router.replace("/auth");
           return;
         }
-        const msg =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load settings.";
+        const msg = errorMessage(err, "Unable to load settings.");
         setError(msg);
+        toast.error(msg);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -176,14 +184,11 @@ function SettingsPage() {
       setProfile(prof);
       if (subResult.ok) {
         setSubscription(subResult.data);
-      } else if (process.env.NODE_ENV !== "production") {
-        console.warn("settings_subscription_refresh_failed", subResult.err);
+      } else {
+        toast.error(errorMessage(subResult.err, "Unable to load subscription details."));
       }
     } catch (err) {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Unable to refresh.";
+      const msg = errorMessage(err, "Unable to refresh.");
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -191,7 +196,10 @@ function SettingsPage() {
   };
 
   const toggleUnsubscribe = async (nextValue: boolean) => {
+    if (!profile) return;
     const startedAt = performance.now();
+    const previous = profile;
+    setProfile({ ...profile, is_unsubscribed: nextValue });
     setIsUpdatingSubscriptionState(true);
     if (nextValue) {
       void trackEvent("unsubscribe_clicked", { source: "settings" });
@@ -203,6 +211,7 @@ function SettingsPage() {
         is_unsubscribed: nextValue,
       });
       setProfile(updated);
+      toast.success(nextValue ? "Email delivery paused." : "Email delivery resumed.");
       if (nextValue) {
         void trackEvent("unsubscribe_succeeded", { source: "settings" });
       } else {
@@ -217,8 +226,11 @@ function SettingsPage() {
           success: true,
         });
       }
-    } catch {
-      setError("Unable to update newsletter subscription state. Please try again.");
+    } catch (err) {
+      setProfile(previous);
+      const msg = errorMessage(err, "Unable to update newsletter subscription state. Please try again.");
+      setError(msg);
+      toast.error(msg);
       const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
       if (process.env.NODE_ENV !== "production") {
         console.log("UI_ACTION_TIMING", {
@@ -247,6 +259,35 @@ function SettingsPage() {
       setError("Could not open billing portal.");
     } finally {
       setIsOpeningPortal(false);
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    if (isResumingSubscription) return;
+    setIsResumingSubscription(true);
+    setError(null);
+    try {
+      const res = await api.post<SubscriptionCancelResponse>(
+        "/api/subscription/cancel",
+        { action: "resume" }
+      );
+      if (res.cancel_at_period_end === true) {
+        setError("Could not resume your subscription. Please try again.");
+        return;
+      }
+      setSubscription((prev) =>
+        prev
+          ? {
+              ...prev,
+              cancel_at_period_end: false,
+              current_period_end: res.current_period_end ?? prev.current_period_end,
+            }
+          : prev
+      );
+    } catch {
+      setError("Could not resume your subscription. Please try again.");
+    } finally {
+      setIsResumingSubscription(false);
     }
   };
 
@@ -329,7 +370,7 @@ function SettingsPage() {
         <div className="bg-white rounded-3xl p-5 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 min-h-[128px]">
           {isLoading ? (
             <div className="h-full min-h-[88px] flex items-center justify-center">
-              <span className="h-5 w-5 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <Spinner size={20} />
             </div>
           ) : profile ? (
             <div className="space-y-2">
@@ -354,7 +395,7 @@ function SettingsPage() {
         <div className="bg-white rounded-3xl p-5 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 min-h-[110px]">
           {isLoading ? (
             <div className="h-full min-h-[70px] flex items-center justify-center">
-              <span className="h-5 w-5 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <Spinner size={20} />
             </div>
           ) : subscription ? (
             <div className="space-y-2">
@@ -381,6 +422,26 @@ function SettingsPage() {
                   Cancels at period end — you keep access until then.
                 </p>
               ) : null}
+              {subscription.trial_end &&
+              new Date(subscription.trial_end).getTime() > Date.now() &&
+              (subscription.stripe_subscription_status === "trialing" ||
+                subscription.status === "trialing") ? (
+                <p className="text-xs font-semibold text-sky-700 dark:text-sky-300">
+                  Free trial — ends{" "}
+                  {new Date(subscription.trial_end).toLocaleDateString(undefined, {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  . You'll be charged $9.99 on{" "}
+                  {new Date(subscription.trial_end).toLocaleDateString(undefined, {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}{" "}
+                  unless you cancel.
+                </p>
+              ) : null}
               {subscription.current_period_end && (
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   Current period ends:{" "}
@@ -400,9 +461,21 @@ function SettingsPage() {
                     </button>
                   </Tooltip>
                 ) : null}
-                {paidTier ? (
+                {paidTier && subscription.cancel_at_period_end ? (
+                  <Tooltip label="Keep your plan and continue billing after this period">
+                    <button
+                      type="button"
+                      onClick={() => void handleResumeSubscription()}
+                      className="btn-outline text-sm py-2 px-3"
+                      disabled={isLoading || isResumingSubscription}
+                    >
+                      {isResumingSubscription ? "Resuming…" : "Resume subscription"}
+                    </button>
+                  </Tooltip>
+                ) : null}
+                {paidTier && !subscription.cancel_at_period_end ? (
                   <Link href="/subscription/cancel" className="btn-outline text-sm py-2 px-3">
-                    Cancel plan
+                    Cancel subscription (keeps your account and data)
                   </Link>
                 ) : null}
                 <button
@@ -490,10 +563,12 @@ function SettingsPage() {
 
         {/* Danger zone: permanent account deletion */}
         <div className="rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/40 dark:bg-red-950/10">
-          <h3 className="text-sm font-bold text-red-700 dark:text-red-300">Delete account</h3>
+          <h3 className="text-sm font-bold text-red-700 dark:text-red-300">
+            Delete account permanently (also cancels billing)
+          </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-red-600/90 dark:text-red-400/90">
-            Permanently delete your account, all newsletters, and your data. Any active
-            subscription is cancelled. This cannot be undone.
+            Permanently delete your account, all newsletters, and your data. Any Stripe
+            subscription is cancelled immediately. This cannot be undone.
           </p>
           <Tooltip label="Permanently delete your account and all data">
             <button
@@ -517,7 +592,7 @@ function SettingsPage() {
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 This permanently deletes your account, newsletters, and all associated data,
-                and cancels any active subscription. This action cannot be undone.
+                and immediately cancels any Stripe subscription. This action cannot be undone.
               </p>
               <label className="mt-4 block text-xs font-semibold text-slate-600 dark:text-slate-300">
                 Type <span className="font-black">DELETE</span> to confirm
@@ -586,8 +661,8 @@ function SettingsPage() {
             {isUpdatingSubscriptionState
               ? "Updating…"
               : profile?.is_unsubscribed
-                ? "Reactivate newsletters"
-                : "Unsubscribe from newsletters"}
+                ? "Resume email delivery"
+                : "Pause email delivery (keeps your account and plan)"}
           </button>
         </nav>
       </div>

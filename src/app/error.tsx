@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-export default function GlobalError({
+export default function ErrorBoundary({
   error,
   reset,
 }: {
@@ -11,7 +11,13 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    void import("@sentry/nextjs")
+      .then((Sentry) => {
+        Sentry.captureException(error);
+      })
+      .catch(() => {
+        /* Sentry is optional */
+      });
   }, [error]);
 
   return (

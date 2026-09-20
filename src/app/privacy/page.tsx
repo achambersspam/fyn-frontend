@@ -5,7 +5,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: July 4, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           For You Newsletter ("we," "us," or "our") operates the For You Newsletter service
@@ -62,10 +62,11 @@ export default function PrivacyPage() {
             ID and subscription status from Stripe solely to manage your plan.
           </Subsection>
           <Subsection title="Usage and analytics data">
-            We collect anonymized events about how you interact with the Service (e.g., pages
-            visited, features used) through PostHog and our own internal analytics pipeline.
-            Sensitive fields such as passwords, authentication tokens, and raw newsletter
-            content are never included in analytics events.
+            If you accept analytics cookies, we collect product-usage events through PostHog,
+            including page views, feature use, autocapture, and session recording. Your
+            PostHog distinct ID is your account UUID (Linked to you: Yes). You can Reject
+            analytics in the cookie banner, and we honor Do Not Track as a rejection. Crash
+            reports via Sentry are necessary to run the Service and are not consent-gated.
           </Subsection>
           <Subsection title="Technical data">
             Standard server and infrastructure logs may record your IP address, browser type,
@@ -77,7 +78,8 @@ export default function PrivacyPage() {
         <Section title="Privacy Nutrition Label">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             An at-a-glance summary of the data we collect, why, and whether it is linked to
-            your identity. This mirrors the format used by app stores. The sections below
+            your identity. Product analytics are <strong>Linked to you: Yes</strong> because
+            PostHog uses your account UUID. This mirrors the format used by app stores. The sections below
             provide the full detail.
           </p>
           <div className="mt-4 overflow-x-auto">
@@ -95,7 +97,8 @@ export default function PrivacyPage() {
                   ["Email address", "Account, login, newsletter delivery", "Yes", "No"],
                   ["Newsletter preferences", "Personalizing your content", "Yes", "No"],
                   ["Payment/subscription status", "Billing (card data held by Stripe, not us)", "Yes", "No"],
-                  ["Usage & analytics events", "Improving the product (anonymized)", "No", "No"],
+                  ["Usage & analytics events", "Improving the product (PostHog UUID, autocapture, session recording)", "Yes", "Yes"],
+                  ["Crash reports (Sentry)", "Error monitoring and reliability", "Yes", "No"],
                   ["Technical logs (IP, browser)", "Security, debugging, abuse prevention", "Not for marketing", "No"],
                 ].map((row) => (
                   <tr key={row[0]} className="border-b border-slate-100 dark:border-slate-800">
@@ -110,7 +113,34 @@ export default function PrivacyPage() {
           </div>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             We do not sell your personal information, and we do not use it for cross-context
-            behavioral advertising or third-party tracking.
+            behavioral advertising or third-party tracking. We do not offer file uploads.
+          </p>
+        </Section>
+
+        <Section title="Email open and click tracking">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Newsletter emails may include an open pixel and click redirects signed with HMAC
+            so we can tell whether an issue was opened or a source link was followed. These
+            are first-party metrics. We do not use a third-party ad network for this.
+          </p>
+        </Section>
+
+        <Section title="Sponsored content">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Free and Plus plans may include sponsored content selected from your chosen
+            topics. We do not sell your personal data to advertisers. Premium never includes
+            sponsored content. At launch there may be no live campaigns — the slot stays empty
+            until we run one.
+          </p>
+        </Section>
+
+        <Section title="Trials, billing, and cancellation">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            New Premium subscribers who have never used a trial receive a 7-day free trial.
+            Unless you cancel, your card is charged $9.99 when the trial ends. We send a
+            reminder 48–72 hours before that charge. Canceling a paid plan takes effect at
+            period end; your account and data stay until you delete them. Cancel from Settings
+            or Stripe&apos;s customer portal — both are valid.
           </p>
         </Section>
 
@@ -179,8 +209,8 @@ export default function PrivacyPage() {
               layer.
             </li>
             <li>
-              <strong>PostHog</strong> — product analytics, if enabled. Data is anonymized
-              and sanitized before transmission. See PostHog's{" "}
+              <strong>PostHog</strong> — product analytics when you accept cookies. We identify
+              you by your account UUID, and may record sessions. See PostHog's{" "}
               <a
                 href="https://posthog.com/privacy"
                 target="_blank"
@@ -190,6 +220,26 @@ export default function PrivacyPage() {
                 Privacy Policy
               </a>{" "}
               for details.
+            </li>
+            <li>
+              <strong>Sentry</strong> — crash reports, stack traces, and request context so we
+              can fix outages. This is necessary error monitoring, not advertising, and is not
+              gated by the cookie banner.
+            </li>
+            <li>
+              <strong>Google OAuth</strong> — optional sign-in. Google provides your email (and
+              name, if you share it) so we can create your account.
+            </li>
+            <li>
+              <strong>WeatherAPI.com</strong> — city names you enter for weather sections.
+            </li>
+            <li>
+              <strong>Finnhub</strong> — ticker symbols you select for stock quotes. We do not
+              send your identity to Finnhub.
+            </li>
+            <li>
+              <strong>NewsAPI</strong> — topic search terms used as a rescue source when RSS
+              feeds are thin.
             </li>
           </ul>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">

@@ -5,17 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "@/components/Icons";
 import * as Icons from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
+import { errorMessage } from "@/lib/errorMessage";
+import { useToast } from "@/lib/useToast";
+import Spinner from "@/components/Spinner";
 import type {
   Newsletter,
   NewsletterUpdatePayload,
   Profile,
 } from "@/lib/apiContracts";
 import { TIER_LIMITS, type Tier } from "@/lib/apiContracts";
-import SaveNotification from "@/components/SaveNotification";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import UnsavedChangesModal from "@/components/UnsavedChangesModal";
 import {
   allocateByPriority,
+  allocateSeconds,
   inferPriorityFromSeconds,
 } from "@/lib/allocateByPriority";
 import {
@@ -93,8 +96,8 @@ export default function EditNewsletterPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSaved, setShowSaved] = useState(false);
   const [showUnsaved, setShowUnsaved] = useState(false);
+  const { toast } = useToast();
   const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
   const [hasInvalidDetailsState, setHasInvalidDetailsState] = useState(false);
   const [showInvalidLeaveWarning, setShowInvalidLeaveWarning] = useState(false);
@@ -173,7 +176,10 @@ export default function EditNewsletterPage() {
   useEffect(() => {
     Promise.all([
       api.get<Newsletter>(`/api/newsletters/${id}`),
-      api.get<Profile>("/api/me").catch(() => null),
+      api.get<Profile>("/api/me").catch((err) => {
+        toast.error(errorMessage(err, "Unable to load your account."));
+        return null;
+      }),
     ])
       .then(([nl, prof]) => {
         const resolvedTier: Tier = prof?.tier ?? "basic";
@@ -253,11 +259,9 @@ export default function EditNewsletterPage() {
         setSavedSnapshot(snap);
       })
       .catch((err) => {
-        const msg =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load newsletter.";
+        const msg = errorMessage(err, "Unable to load newsletter.");
         setError(msg);
+        toast.error(msg);
       })
       .finally(() => setIsLoading(false));
   }, [id]);
@@ -355,15 +359,20 @@ export default function EditNewsletterPage() {
     setIsSaving(true);
     setError(null);
     setNearSendWarning(false);
+    const previousSnapshot = savedSnapshot;
+    setSavedSnapshot(currentSnapshot);
+    toast.success("Saved");
 
     const selectedTimezone = getTimezoneOptionByValue(timezone);
     const payload: NewsletterUpdatePayload = {
       email: email || undefined,
-      topics: selectedTopics.map((t) => ({
-        topic: t,
-        specific_details: normalizeTopicDetailsForSave(t, topicDetails[t]),
-        allocated_seconds: topicSeconds[t] ?? 20,
-      })),
+      topics: allocateSeconds({
+        topics: selectedTopics.map((t) => ({
+          topic: t,
+          specific_details: normalizeTopicDetailsForSave(t, topicDetails[t]),
+        })),
+        readTimeMinutes: readTimeMin,
+      }),
       frequency,
       delivery_time: deliveryTime,
       timezone: selectedTimezone?.iana || "America/New_York",
@@ -395,8 +404,6 @@ export default function EditNewsletterPage() {
         topic_count: selectedTopics.length,
         frequency,
       });
-      setSavedSnapshot(currentSnapshot);
-      setShowSaved(true);
       setHasInvalidDetailsState(false);
 
       if (nextSend) {
@@ -416,9 +423,8 @@ export default function EditNewsletterPage() {
       const msg =
         details.length > 0
           ? details.join(" ")
-          : err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Failed to save changes.";
+          : errorMessage(err, "Failed to save changes.");
+      setSavedSnapshot(previousSnapshot);
       setHasInvalidDetailsState(isInvalidDetailsApiError(msg, apiErr?.details));
       const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
       if (process.env.NODE_ENV !== "production") {
@@ -433,6 +439,7 @@ export default function EditNewsletterPage() {
         reason: "api_error",
       });
       setError(msg);
+      toast.error(errorMessage(err, msg));
       return false;
     } finally {
       setIsSaving(false);
@@ -451,6 +458,7 @@ export default function EditNewsletterPage() {
     readTimeMin,
     id,
     currentSnapshot,
+    savedSnapshot,
     nextSend,
     limits,
     tier,
@@ -458,6 +466,7 @@ export default function EditNewsletterPage() {
     allocationValid,
     totalSeconds,
     isInvalidDetailsApiError,
+    toast,
   ]);
 
   const promptLeaveForInvalidDetails = useCallback((nextNav: () => void) => {
@@ -486,11 +495,9 @@ export default function EditNewsletterPage() {
       await api.delete(`/api/newsletters/${id}`);
       router.push("/newsletter");
     } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Failed to delete newsletter.";
+      const message = errorMessage(err, "Failed to delete newsletter.");
       setError(message);
+      toast.error(message);
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -527,7 +534,7 @@ export default function EditNewsletterPage() {
         <div className="max-w-[820px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
           <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-300">
-              <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <Spinner size={16} />
               <span>Loading newsletter settings...</span>
             </div>
           </div>
@@ -538,11 +545,6 @@ export default function EditNewsletterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 dark:bg-slate-950">
-      <SaveNotification
-        show={showSaved}
-        onDone={() => setShowSaved(false)}
-      />
-
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto flex items-center gap-3 px-4 sm:px-6 lg:px-10 py-4">
           <TooltipWithAria label="Back to dashboard (unsaved changes will prompt)">

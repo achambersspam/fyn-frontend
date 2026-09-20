@@ -7,6 +7,10 @@ import { ChevronLeft, MessageCircle, ThumbsDown, ThumbsUp } from "@/components/I
 import { api, type ApiError } from "@/lib/api";
 import type { FeedbackComment, FeedbackPost, Profile } from "@/lib/apiContracts";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import FeedbackListSkeleton from "@/components/skeletons/FeedbackListSkeleton";
+import { errorMessage } from "@/lib/errorMessage";
+import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
+import { useToast } from "@/lib/useToast";
 
 type UiFeedbackComment = FeedbackComment & {
   author_label?: string;
@@ -25,13 +29,10 @@ export default function FeedbackBoardPage() {
   const [commentsByPost, setCommentsByPost] = useState<Record<string, UiFeedbackComment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [currentUserLabel, setCurrentUserLabel] = useState("You");
+  const showSkeleton = useDelayedVisibility(feedbackLoading, 200);
+  const { toast } = useToast();
 
-  const toUiError = (err: unknown, fallback: string) => {
-    if (err && typeof err === "object" && "message" in err) {
-      return String((err as { message?: unknown }).message || fallback);
-    }
-    return fallback;
-  };
+  const toUiError = (err: unknown, fallback: string) => errorMessage(err, fallback);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -50,7 +51,10 @@ export default function FeedbackBoardPage() {
       try {
         const [posts, profile] = await Promise.all([
           api.get<FeedbackPost[]>("/api/feedback"),
-          api.get<Profile>("/api/me").catch(() => null),
+          api.get<Profile>("/api/me").catch((err) => {
+            toast.error(errorMessage(err, "Unable to load your account."));
+            return null;
+          }),
         ]);
         if (cancelled) return;
         setFeedbackPosts(posts);
@@ -256,11 +260,8 @@ export default function FeedbackBoardPage() {
           </div>
         </div>
 
-        {feedbackLoading ? (
-          <div className="space-y-2">
-            <div className="h-16 rounded-xl bg-gray-100 animate-pulse dark:bg-slate-800" />
-            <div className="h-16 rounded-xl bg-gray-100 animate-pulse dark:bg-slate-800" />
-          </div>
+        {showSkeleton ? (
+          <FeedbackListSkeleton />
         ) : (
           <div className="space-y-3">
             {feedbackPosts.map((post) => (

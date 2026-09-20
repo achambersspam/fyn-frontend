@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { ChevronRight } from "@/components/Icons";
-import PageSkeleton from "@/components/PageSkeleton";
+import NewsletterListSkeleton from "@/components/skeletons/NewsletterListSkeleton";
 import Tooltip from "@/components/Tooltip";
 import { api } from "@/lib/api";
 import { getCurrentSession } from "@/lib/supabase";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
 import { TIER_LIMITS } from "@/lib/apiContracts";
+import { errorMessage } from "@/lib/errorMessage";
+import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
+import { useToast } from "@/lib/useToast";
 
 export default function NewsletterPage() {
   const router = useRouter();
@@ -20,6 +23,8 @@ export default function NewsletterPage() {
   const [error, setError] = useState<string | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [isNavigatingCreate, setIsNavigatingCreate] = useState(false);
+  const showSkeleton = useDelayedVisibility(isLoading, 200);
+  const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +40,10 @@ export default function NewsletterPage() {
       try {
         const [nls, prof] = await Promise.all([
           api.get<Newsletter[]>("/api/newsletters"),
-          api.get<Profile>("/api/me").catch(() => null),
+          api.get<Profile>("/api/me").catch((err) => {
+            toast.error(errorMessage(err, "Unable to load your account."));
+            return null;
+          }),
         ]);
         if (cancelled) return;
         setNewsletters(Array.isArray(nls) ? nls : []);
@@ -50,11 +58,9 @@ export default function NewsletterPage() {
           router.replace("/auth");
           return;
         }
-        const msg =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load newsletters.";
+        const msg = errorMessage(err, "Unable to load newsletters.");
         setError(msg);
+        toast.error(msg);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -105,9 +111,7 @@ export default function NewsletterPage() {
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-4">
-        {isLoading && (
-          <PageSkeleton rows={3} />
-        )}
+        {showSkeleton && <NewsletterListSkeleton />}
 
         {error && (
           <div className="rounded-2xl p-5 text-center font-semibold bg-red-600 text-white">

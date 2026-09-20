@@ -3,21 +3,20 @@
 /* eslint-disable @next/next/no-img-element */
 
 // The actual outlets our grounding pipeline pulls from (see
-// the-final-fyn-backend/lib/sources/news.ts). Logos come from Google's
-// public favicon service — Clearbit's logo CDN is defunct and served
-// broken images. The `name` doubles as alt text and an inline wordmark
-// beside each mark.
-const SOURCES: Array<{ name: string; domain: string }> = [
-  { name: "ESPN", domain: "espn.com" },
-  { name: "BBC", domain: "bbc.com" },
-  { name: "The Guardian", domain: "theguardian.com" },
-  { name: "The New York Times", domain: "nytimes.com" },
-  { name: "Ars Technica", domain: "arstechnica.com" },
-  { name: "The Verge", domain: "theverge.com" },
-  { name: "Yahoo Finance", domain: "finance.yahoo.com" },
-  { name: "Yahoo Sports", domain: "sports.yahoo.com" },
-  { name: "CoinDesk", domain: "coindesk.com" },
-  { name: "Cointelegraph", domain: "cointelegraph.com" },
+// the-final-fyn-backend/lib/sources/news.ts). Favicons are checked into
+// public/source-logos so the landing page does not fan out to external logo
+// services on every visit. The `name` doubles as alt text and wordmark.
+const SOURCES: Array<{ name: string; domain: string; logo: string }> = [
+  { name: "ESPN", domain: "espn.com", logo: "/source-logos/espn.png" },
+  { name: "BBC", domain: "bbc.com", logo: "/source-logos/bbc.png" },
+  { name: "The Guardian", domain: "theguardian.com", logo: "/source-logos/theguardian.png" },
+  { name: "The New York Times", domain: "nytimes.com", logo: "/source-logos/nytimes.png" },
+  { name: "Ars Technica", domain: "arstechnica.com", logo: "/source-logos/arstechnica.png" },
+  { name: "The Verge", domain: "theverge.com", logo: "/source-logos/theverge.png" },
+  { name: "Yahoo Finance", domain: "finance.yahoo.com", logo: "/source-logos/finance-yahoo.png" },
+  { name: "Yahoo Sports", domain: "sports.yahoo.com", logo: "/source-logos/sports-yahoo.png" },
+  { name: "CoinDesk", domain: "coindesk.com", logo: "/source-logos/coindesk.png" },
+  { name: "Cointelegraph", domain: "cointelegraph.com", logo: "/source-logos/cointelegraph.png" },
 ];
 
 // Duplicated once so the track can loop seamlessly at -50%.
@@ -43,13 +42,19 @@ export default function SourceLogoMarquee() {
             className="flex h-16 shrink-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none"
           >
             <img
-              src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=128`}
+              src={source.logo}
               alt={i >= SOURCES.length ? "" : `${source.name} logo`}
               loading="lazy"
               className="h-8 w-8 rounded-md object-contain"
               onError={(e) => {
-                // Hide the broken image; the wordmark next to it carries on.
-                e.currentTarget.style.display = "none";
+                const img = e.currentTarget;
+                if (img.dataset.fallbackAttempted) {
+                  // Hide the broken image; the wordmark next to it carries on.
+                  img.style.display = "none";
+                  return;
+                }
+                img.dataset.fallbackAttempted = "true";
+                img.src = `https://www.google.com/s2/favicons?domain=${source.domain}&sz=128`;
               }}
             />
             <span className="whitespace-nowrap text-sm font-black tracking-tight text-slate-700 dark:text-slate-200">

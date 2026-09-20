@@ -7,6 +7,8 @@ import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { TOPIC_OPTIONS } from "@/lib/topics/topicConfig";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
+import { errorMessage } from "@/lib/errorMessage";
+import { useToast } from "@/lib/useToast";
 
 type InstantStatus = {
   tier: "basic" | "minimum" | "premium";
@@ -38,6 +40,7 @@ export default function GenerateNowCard({
   profile: Profile | null;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [status, setStatus] = useState<InstantStatus | null>(null);
   const [step, setStep] = useState<
     "closed" | "wall" | "choose" | "preset" | "custom"
@@ -59,8 +62,11 @@ export default function GenerateNowCard({
     api
       .get<InstantStatus>("/api/generate-now")
       .then(setStatus)
-      .catch(() => setStatus(null));
-  }, [isPaid]);
+      .catch((err) => {
+        setStatus(null);
+        toast.error(errorMessage(err, "Unable to load instant generation quota."));
+      });
+  }, [isPaid, toast]);
 
   const openModal = () => {
     void trackEvent("generate_now_clicked", { tier: profile?.tier || "unknown" });
@@ -74,7 +80,6 @@ export default function GenerateNowCard({
   };
 
   const closeModal = () => {
-    if (isGenerating) return;
     setStep("closed");
     setError(null);
     setCustomTopics([]);
@@ -100,8 +105,21 @@ export default function GenerateNowCard({
     newsletterId?: string;
     topics?: Array<{ topic: string; details: string }>;
   }) => {
+    if (isGenerating) return;
     setIsGenerating(true);
     setError(null);
+    const previous = status;
+    setStep("closed");
+    toast.info("Generating your issue…");
+    setStatus((prev) =>
+      prev
+        ? {
+            ...prev,
+            remaining: Math.max(0, prev.remaining - 1),
+            used: prev.used + 1,
+          }
+        : prev
+    );
     try {
       const result = await api.post<GenerateNowResponse>(
         "/api/generate-now",
@@ -112,20 +130,19 @@ export default function GenerateNowCard({
         source: payload.source,
         remaining: result.remaining,
       });
-      setStatus((prev) => (prev ? { ...prev, remaining: result.remaining } : prev));
-      setStep("closed");
+      setStatus((prev) => (prev ? { ...prev, remaining: result.remaining, used: prev.allowed - result.remaining } : prev));
+      toast.success("Your issue is ready.");
       const targetNewsletter = result.newsletter_id || payload.newsletterId || newsletters[0]?.id;
       if (targetNewsletter) {
         router.push(`/newsletter/${targetNewsletter}/read`);
       }
     } catch (err) {
       const apiErr = err as ApiError;
+      setStatus(previous);
       if (apiErr?.code === "UPGRADE_REQUIRED") {
         setStep("wall");
-      } else if (apiErr?.code === "QUOTA_EXHAUSTED") {
-        setError(apiErr.message);
       } else {
-        setError(apiErr?.message || "Generation failed. Please try again.");
+        toast.error(errorMessage(err, "Generation failed. Please try again."));
       }
       void trackEvent("generate_now_failed", {
         source: payload.source,
@@ -154,9 +171,10 @@ export default function GenerateNowCard({
           </div>
           <button
             onClick={openModal}
-            className="btn-primary shrink-0 px-4 py-2 text-sm"
+            disabled={isGenerating}
+            className="btn-primary shrink-0 px-4 py-2 text-sm disabled:opacity-60"
           >
-            Generate Now
+            {isGenerating ? "Generating…" : "Generate Now"}
           </button>
         </div>
       </div>

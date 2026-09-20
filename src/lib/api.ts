@@ -34,6 +34,7 @@ type RequestOptions = {
   sessionRetries?: number;
   sessionRetryDelayMs?: number;
   timeoutMs?: number;
+  idempotencyKey?: string;
 };
 
 async function request<T>(
@@ -55,6 +56,9 @@ async function request<T>(
   headers.set("Content-Type", "application/json");
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+  if (options.idempotencyKey) {
+    headers.set("Idempotency-Key", options.idempotencyKey);
   }
 
   const bases = buildCandidateBases();
@@ -120,6 +124,19 @@ async function request<T>(
   }
 
   if (!response) {
+    const offline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+    if (offline) {
+      throw {
+        message: "You appear to be offline. Check your connection.",
+        status: 0,
+        code: "OFFLINE",
+        details: {
+          code: "OFFLINE",
+          attempted_bases: bases,
+        },
+      } as ApiError;
+    }
     const message =
       lastNetworkError &&
       typeof lastNetworkError === "object" &&

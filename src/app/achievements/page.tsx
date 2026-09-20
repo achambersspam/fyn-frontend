@@ -6,6 +6,10 @@ import BottomNav from "@/components/BottomNav";
 import { ChevronLeft, Trophy, Flame, Check } from "@/components/Icons";
 import { api } from "@/lib/api";
 import type { Achievement } from "@/lib/apiContracts";
+import AchievementsSkeleton from "@/components/skeletons/AchievementsSkeleton";
+import { errorMessage } from "@/lib/errorMessage";
+import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
+import { useToast } from "@/lib/useToast";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BADGE_THRESHOLDS = [
@@ -32,17 +36,17 @@ export default function AchievementsPage() {
   const [data, setData] = useState<Achievement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const showSkeleton = useDelayedVisibility(isLoading, 200);
+  const { toast } = useToast();
 
   useEffect(() => {
     api
       .get<Achievement>("/api/achievements")
       .then((d) => setData(d))
       .catch((err) => {
-        const msg =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load achievements.";
+        const msg = errorMessage(err, "Unable to load achievements.");
         setError(msg);
+        toast.error(msg);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -75,12 +79,7 @@ export default function AchievementsPage() {
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-6">
-        {isLoading && (
-          <div className="space-y-3">
-            <div className="h-24 rounded-2xl bg-white border border-gray-200 animate-pulse dark:bg-slate-900 dark:border-slate-800" />
-            <div className="h-24 rounded-2xl bg-white border border-gray-200 animate-pulse dark:bg-slate-900 dark:border-slate-800" />
-          </div>
-        )}
+        {showSkeleton && <AchievementsSkeleton />}
 
         {error && (
           <div className="rounded-2xl p-5 text-center font-semibold bg-red-600 text-white">

@@ -6,9 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import GenerateNowCard from "@/components/GenerateNowCard";
 import Tooltip from "@/components/Tooltip";
+import Spinner from "@/components/Spinner";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { Trophy, Clock, Pause, Play } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
+import { errorMessage } from "@/lib/errorMessage";
+import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
+import { useToast } from "@/lib/useToast";
+import {
+  consumeCoachActivation,
+  NAV_COACH_FROM_CREATING_KEY,
+} from "@/lib/navCoachMarks";
 import type {
   Newsletter,
   Achievement,
@@ -82,6 +91,17 @@ function DashboardPage() {
   const [togglingPause, setTogglingPause] = useState<string | null>(null);
   const [isResubscribing, setIsResubscribing] = useState(false);
   const showFirstIssueLimitNotice = searchParams.get("firstIssueLimitHit") === "1";
+  const showSkeleton = useDelayedVisibility(isLoading, 200);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (searchParams.get("fromCreating") === "1") {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(NAV_COACH_FROM_CREATING_KEY, "1");
+      }
+    }
+    consumeCoachActivation();
+  }, [searchParams]);
 
   useEffect(() => {
     async function initDashboard() {
@@ -99,8 +119,14 @@ function DashboardPage() {
 
       Promise.all([
         api.get<Newsletter[]>("/api/newsletters"),
-        api.get<Achievement>("/api/achievements").catch(() => null),
-        api.get<Profile>("/api/me").catch(() => null),
+        api.get<Achievement>("/api/achievements").catch((err) => {
+          toast.error(errorMessage(err, "Unable to load achievements."));
+          return null;
+        }),
+        api.get<Profile>("/api/me").catch((err) => {
+          toast.error(errorMessage(err, "Unable to load your account."));
+          return null;
+        }),
       ])
         .then(async ([nls, ach, prof]) => {
           const safeNewsletters = Array.isArray(nls) ? nls : [];
@@ -136,14 +162,13 @@ function DashboardPage() {
         .catch((err) => {
           const apiErr = err as ApiError;
           if (apiErr?.status === 401) {
+            toast.error(errorMessage(apiErr));
             router.replace("/auth");
             return;
           }
-          const message =
-            err && typeof err === "object" && "message" in err
-              ? (err as { message: string }).message
-              : "Unable to load dashboard.";
+          const message = errorMessage(err, "Unable to load dashboard.");
           setError(message);
+          toast.error(message);
         })
         .finally(() => setIsLoading(false));
     }
@@ -220,14 +245,7 @@ function DashboardPage() {
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-6">
-        {isLoading && (
-          <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-300">
-              <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
-              <span>Loading dashboard...</span>
-            </div>
-          </div>
-        )}
+        {showSkeleton && <DashboardSkeleton />}
 
         {error && (
           <div className="rounded-2xl border border-red-500/90 bg-red-500/10 px-5 py-4 text-center font-semibold text-white">
@@ -332,7 +350,7 @@ function DashboardPage() {
                       </p>
                     ) : isGenerating ? (
                       <div className="flex items-center gap-2 text-sm font-semibold text-sky-600 dark:text-sky-300">
-                        <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+                        <Spinner size={16} />
                         <span>Generating your latest issue...</span>
                       </div>
                     ) : (

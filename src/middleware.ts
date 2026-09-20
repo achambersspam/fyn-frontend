@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/cookies",
   "/terms",
+  "/start",
+  "/offline",
 ];
 
 export async function middleware(request: NextRequest) {

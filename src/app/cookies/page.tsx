@@ -5,7 +5,7 @@ export default function CookiesPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Cookie Policy</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: June 2, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           This Cookie Policy explains how For You Newsletter uses cookies and similar
@@ -44,7 +44,13 @@ export default function CookiesPage() {
               name="Analytics (PostHog)"
               type="Cookie / localStorage"
               purpose="Analytics"
-              description="If PostHog analytics are active, PostHog sets cookies and localStorage entries to track anonymized usage events such as page views and feature interactions. Sensitive data — including passwords, authentication tokens, and newsletter content — is never included. This data helps us understand how the Service is used so we can improve it."
+              description="If you Accept analytics, PostHog sets cookies and localStorage for page views, autocapture, and session recording. Your distinct ID is your account UUID. Reject means we never call posthog.init. A Do Not Track (DNT=1) browser setting is treated as Reject and the banner is not required."
+            />
+            <StorageItem
+              name="Cookie consent"
+              type="localStorage (fyn.cookie_consent.v1)"
+              purpose="Functional"
+              description="Stores whether you Accepted or Rejected analytics so we do not ask on every visit."
             />
           </div>
         </Section>
@@ -69,7 +75,13 @@ export default function CookiesPage() {
             in your browser settings.
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            <strong>PostHog analytics opt-out:</strong> PostHog respects the{" "}
+            <strong>Accept / Reject:</strong> The cookie banner lets you Accept analytics
+            (PostHog, including session recording) or Reject it. Error monitoring (Sentry)
+            stays on because it is necessary to operate the Service. DNT=1 is treated as
+            Reject.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>PostHog analytics opt-out:</strong> Choose Reject on the banner, enable{" "}
             <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-700">
               Do Not Track
             </code>{" "}

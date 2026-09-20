@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useFieldFocus } from "@/lib/useFieldFocus";
 
 export type Validator = (value: string, allValues: Record<string, string>) => string | null;
 
@@ -25,6 +26,7 @@ type FieldState = {
  */
 export function useFieldValidation(config: FieldConfig, initial?: Record<string, string>) {
   const fieldNames = useMemo(() => Object.keys(config), [config]);
+  const { register, focusFirstInvalid: focusByName } = useFieldFocus();
 
   const [fields, setFields] = useState<Record<string, FieldState>>(() => {
     const state: Record<string, FieldState> = {};
@@ -90,13 +92,17 @@ export function useFieldValidation(config: FieldConfig, initial?: Record<string,
 
   const validateAll = useCallback((): boolean => {
     let ok = true;
+    const invalid: string[] = [];
     setFields((prev) => {
       const next: Record<string, FieldState> = {};
       const allValues: Record<string, string> = {};
       for (const name of fieldNames) allValues[name] = prev[name].value;
       for (const name of fieldNames) {
         const error = config[name](prev[name].value, allValues);
-        if (error) ok = false;
+        if (error) {
+          ok = false;
+          invalid.push(name);
+        }
         next[name] = {
           ...prev[name],
           touched: true,
@@ -106,8 +112,11 @@ export function useFieldValidation(config: FieldConfig, initial?: Record<string,
       }
       return next;
     });
+    if (!ok) {
+      focusByName(invalid);
+    }
     return ok;
-  }, [config, fieldNames]);
+  }, [config, fieldNames, focusByName]);
 
   const reset = useCallback(() => {
     setFields((prev) => {
@@ -121,11 +130,12 @@ export function useFieldValidation(config: FieldConfig, initial?: Record<string,
 
   const fieldProps = useCallback(
     (name: string) => ({
+      ref: register(name),
       value: fields[name]?.value ?? "",
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleChange(name, e.target.value),
       onBlur: () => handleBlur(name),
     }),
-    [fields, handleChange, handleBlur]
+    [fields, handleChange, handleBlur, register]
   );
 
   const status = useCallback(
@@ -147,6 +157,11 @@ export function useFieldValidation(config: FieldConfig, initial?: Record<string,
     handleChange,
     handleBlur,
     validateAll,
+    focusFirstInvalid: () => {
+      const invalid = fieldNames.filter((name) => fields[name]?.error);
+      return focusByName(invalid);
+    },
+    register,
     reset,
   };
 }
@@ -155,16 +170,16 @@ export function useFieldValidation(config: FieldConfig, initial?: Record<string,
 export const validators = {
   email: (value: string): string | null => {
     const v = value.trim();
-    if (!v) return "Email is required.";
+    if (!v) return "This field is required.";
     // Pragmatic email shape check — one @, a dot in the domain, no spaces.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "Enter a valid email address.";
     return null;
   },
   password: (value: string): string | null => {
-    if (!value) return "Password is required.";
+    if (!value) return "This field is required.";
     if (value.length < 6) return "Password must be at least 6 characters.";
     return null;
   },
-  required: (label: string): Validator => (value: string) =>
-    value.trim() ? null : `${label} is required.`,
+  required: (_label: string): Validator => (value: string) =>
+    value.trim() ? null : "This field is required.",
 };

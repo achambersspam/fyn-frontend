@@ -5,7 +5,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Terms of Use</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: July 4, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           These Terms of Use ("Terms") govern your access to and use of the For You
@@ -49,7 +49,9 @@ export default function TermsPage() {
           <ul className="mt-3 list-disc pl-5 text-sm leading-7 text-slate-600 dark:text-slate-300 space-y-1">
             <li><strong>Free</strong> — limited access at no charge.</li>
             <li><strong>Plus</strong> — $4.99 billed every 4 weeks.</li>
-            <li><strong>Premium</strong> — $9.99 billed every 4 weeks.</li>
+            <li><strong>Premium</strong> — $9.99 billed every 4 weeks. Eligible accounts
+              receive a 7-day free trial the first time they start Premium. Plus does not
+              include a trial.</li>
           </ul>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Paid plans are billed automatically on a recurring 4-week cycle. By subscribing,
@@ -67,7 +69,16 @@ export default function TermsPage() {
             .
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            You may cancel or change your plan at any time through the Customer Portal
+            If you start a Premium trial, we will charge $9.99 at the end of the 7 days unless
+            you cancel first. We email a reminder 48–72 hours before that charge. Cancellation
+            is <strong>cancel-at-period-end</strong>: you keep paid access until the current
+            period (or trial) ends, and we do not issue prorated refunds for unused time.
+            You can cancel in Settings (first-party) or through Stripe&apos;s customer portal;
+            both are valid and take effect at period end. Your account remains unless you
+            delete it.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            You may cancel or change your plan at any time through Settings or the Customer Portal
             accessible from your account settings. Cancellation takes effect at the end of
             the current billing period; you will retain access to paid features until that
             date. We do not offer prorated refunds for unused time in a billing period.

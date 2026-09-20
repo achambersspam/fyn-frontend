@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import { api, type ApiError } from "@/lib/api";
-import type { CheckoutResponse, Profile } from "@/lib/apiContracts";
+import type {
+  CheckoutResponse,
+  Profile,
+  SubscriptionCancelResponse,
+  SubscriptionInfo,
+} from "@/lib/apiContracts";
+import { errorMessage } from "@/lib/errorMessage";
+import { useToast } from "@/lib/useToast";
 
 type PlanCard = {
   id: string;
@@ -35,7 +42,7 @@ const plans: PlanCard[] = [
       "1 newsletter",
       "Up to 6 topics",
       "Weekday delivery windows",
-      "Ads enabled",
+      "May include sponsored content",
     ],
     cta: "Current plan",
     disabled: true,
@@ -51,7 +58,7 @@ const plans: PlanCard[] = [
       "Up to 2 newsletters",
       "Up to 6 topics",
       "Expanded delivery windows",
-      "Ads enabled",
+      "May include sponsored content",
     ],
     cta: "Upgrade to Plus",
     disabled: false,
@@ -70,9 +77,9 @@ const plans: PlanCard[] = [
       "Up to 5 newsletters",
       "Up to 6 topics",
       "Weekend delivery (weekly / bi-weekly)",
-      "No ads",
+      "Never any sponsored content.",
     ],
-    cta: "Upgrade to Premium",
+    cta: "Start 7-day free trial",
     subtext: "Credit card required. Cancel anytime.",
     disabled: false,
     emphasized: true,
@@ -84,16 +91,30 @@ export default function SubscriptionPage() {
   const checkoutGuardRef = useRef(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isResuming, setIsResuming] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const p = await api.get<Profile>("/api/me");
-        if (!cancelled) setProfile(p);
-      } catch {
-        /* anonymous / handled elsewhere */
+        const [p, sub] = await Promise.all([
+          api.get<Profile>("/api/me"),
+          api.get<SubscriptionInfo>("/api/subscription").catch((err) => {
+            toast.error(errorMessage(err, "Unable to load subscription details."));
+            return null;
+          }),
+        ]);
+        if (!cancelled) {
+          setProfile(p);
+          if (sub) setSubscription(sub);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(errorMessage(err, "Unable to load subscription details."));
+        }
       }
     })();
     return () => {
@@ -102,6 +123,25 @@ export default function SubscriptionPage() {
   }, []);
 
   const tier = profile?.tier ?? "basic";
+  const trialEndMs = subscription?.trial_end
+    ? new Date(subscription.trial_end).getTime()
+    : NaN;
+  const isTrialing =
+    Number.isFinite(trialEndMs) &&
+    trialEndMs > Date.now() &&
+    (subscription?.stripe_subscription_status === "trialing" ||
+      subscription?.status === "trialing");
+  const trialDateLabel = Number.isFinite(trialEndMs)
+    ? new Date(trialEndMs).toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+  const premiumCta =
+    subscription?.has_used_trial === true
+      ? "Upgrade to Premium"
+      : "Start 7-day free trial";
 
   const handleCheckout = async (planId: string) => {
     if (planId === "basic") return;
@@ -157,6 +197,40 @@ export default function SubscriptionPage() {
     } finally {
       checkoutGuardRef.current = false;
       setLoading(null);
+    }
+  };
+
+  const handleResume = async () => {
+    if (checkoutGuardRef.current || loading !== null || isResuming) return;
+    setIsResuming(true);
+    setError(null);
+    try {
+      const res = await api.post<SubscriptionCancelResponse>(
+        "/api/subscription/cancel",
+        { action: "resume" }
+      );
+      if (res.cancel_at_period_end === true) {
+        setError("Could not resume your subscription. Please try again.");
+        return;
+      }
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              cancel_at_period_end: false,
+              subscription_current_period_end:
+                res.current_period_end ?? prev.subscription_current_period_end,
+            }
+          : prev
+      );
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Could not resume your subscription.";
+      setError(msg);
+    } finally {
+      setIsResuming(false);
     }
   };
 
@@ -219,7 +293,7 @@ export default function SubscriptionPage() {
         </div>
 
         {paidSubscriber ? (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-3">
             <Tooltip label="Open the Stripe portal to update payment or cancel">
               <button
                 type="button"
@@ -230,6 +304,40 @@ export default function SubscriptionPage() {
                 {loading === "portal" ? "Opening…" : "Manage billing"}
               </button>
             </Tooltip>
+            {profile?.cancel_at_period_end ? (
+              <div className="text-center space-y-2">
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  Cancellation scheduled
+                  {profile.subscription_current_period_end
+                    ? ` — access through ${new Date(
+                        profile.subscription_current_period_end
+                      ).toLocaleDateString()}`
+                    : ". You keep access until period end."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleResume()}
+                  disabled={isResuming || loading !== null}
+                  className="btn-outline px-6 py-2 text-sm font-bold"
+                >
+                  {isResuming ? "Resuming…" : "Resume subscription"}
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/subscription/cancel"
+                className="text-sm font-semibold text-gray-500 hover:text-gray-800 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Cancel subscription (keeps your account and data)
+              </Link>
+            )}
+          </div>
+        ) : null}
+
+        {isTrialing ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800 text-center dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-100">
+            Free trial — ends {trialDateLabel}. You'll be charged $9.99 on{" "}
+            {trialDateLabel} unless you cancel.
           </div>
         ) : null}
 
@@ -336,7 +444,9 @@ export default function SubscriptionPage() {
                         ? `${planLabel(plan.id)} active`
                         : plan.id === "premium" && tier === "minimum"
                           ? "Upgrade via Manage billing"
-                          : plan.cta}
+                          : plan.id === "premium"
+                            ? premiumCta
+                            : plan.cta}
                 </button>
 
                 {plan.subtext && (

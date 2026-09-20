@@ -38,3 +38,14 @@ test('new test user signs in and lands on setup or dashboard', async ({ page }) 
   await expect(page.locator('text=An account with this email already exists')).not.toBeVisible();
   await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 });
+
+test('get started path shows the value prop then auth', async ({ page }) => {
+  await page.goto('/start');
+  await expect(
+    page.getByRole('heading', {
+      name: '3 step sign up to unlock personalized news just for you',
+    })
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Create Account' }).click();
+  await page.waitForURL('**/auth', { timeout: 10_000 });
+});

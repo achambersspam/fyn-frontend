@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "audit:topic-presets": "tsx scripts/auditTopicDetailPresetIntegrity.ts",
+    "audit:error-surfaces": "tsx scripts/auditErrorSurfaces.ts",
+    "validate:error-message": "tsx scripts/validateErrorMessage.ts",
     "analyze:button-latency": "tsx scripts/analyzeButtonActionLatency.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

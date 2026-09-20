@@ -62,6 +62,13 @@ export default async function globalSetup() {
     timeout: 20_000,
   });
 
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      'fyn.cookie_consent.v1',
+      JSON.stringify({ analytics: false, at: new Date().toISOString() })
+    );
+  });
+
   await context.storageState({ path: SESSION_PATH });
   await browser.close();
 }

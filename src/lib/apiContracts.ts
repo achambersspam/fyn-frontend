@@ -17,6 +17,7 @@ export type Profile = {
   unsubscribed_at?: string;
   resubscribed_at?: string;
   created_at?: string;
+  nav_coach_marks_seen?: Record<string, boolean>;
 };
 
 export type NewsletterTopic = {
@@ -148,6 +149,7 @@ export type SubscriptionInfo = {
   current_period_end?: string;
   cancel_at_period_end?: boolean;
   trial_end?: string;
+  has_used_trial?: boolean;
   ads_enabled?: boolean;
   limits?: {
     max_newsletters: number;
@@ -158,11 +160,22 @@ export type SubscriptionInfo = {
 
 export type CheckoutResponse = {
   url: string;
+  trial_period_days?: number | null;
 };
 
 export type StripePortalPayload = {
   action: "manage" | "cancel";
   reason?: string;
+};
+
+export type SubscriptionCancelPayload = {
+  action?: "cancel" | "resume";
+  reason?: string;
+};
+
+export type SubscriptionCancelResponse = {
+  cancel_at_period_end: boolean;
+  current_period_end?: string;
 };
 
 export type TrendingTopic = {

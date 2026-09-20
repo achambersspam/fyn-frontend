@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 // Copy beats shown under the video, swapped as the scrub progresses so the
 // pinned scroll distance is doing narrative work, not just holding a video.
@@ -17,20 +17,39 @@ export default function ScrollScrubVideo({
   src,
   children,
   className,
+  poster = "/pigeon-filled.svg",
 }: {
   src: string;
   children?: ReactNode;
   className?: string;
+  poster?: string;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const captionRef = useRef<HTMLParagraphElement>(null);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || shouldLoadVideo) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "700px 0px" }
+    );
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, [shouldLoadVideo]);
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
     const video = videoRef.current;
     const caption = captionRef.current;
-    if (!wrapper || !video) return;
+    if (!wrapper || !video || !shouldLoadVideo) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -103,7 +122,7 @@ export default function ScrollScrubVideo({
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [shouldLoadVideo]);
 
   return (
     <div ref={wrapperRef} className={`relative h-[200vh] ${className ?? ""}`}>
@@ -111,10 +130,11 @@ export default function ScrollScrubVideo({
         {children}
         <video
           ref={videoRef}
-          src={src}
+          src={shouldLoadVideo ? src : undefined}
           muted
           playsInline
-          preload="auto"
+          preload="none"
+          poster={poster}
           aria-label="The For You Newsletter mailbox opening as the pigeon pops its head out and smiles"
           // The video has a white background baked in: in light mode it
           // blends into the white section invisibly; in dark mode frame it

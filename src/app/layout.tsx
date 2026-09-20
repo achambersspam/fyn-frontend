@@ -4,6 +4,10 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 import ObservabilityBootstrap from "@/components/ObservabilityBootstrap";
+import { ToastProvider } from "@/components/Toast";
+import CookieConsent from "@/components/CookieConsent";
+import OfflineBanner from "@/components/OfflineBanner";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +24,7 @@ export const metadata: Metadata = {
     icon: "/pigeon-filled.svg",
     apple: "/pigeon-filled.svg",
   },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     url: SITE_URL,
@@ -55,13 +60,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
-          <ObservabilityBootstrap />
-          <div className="min-h-screen">
-            <div className="fixed top-4 right-6 z-50 max-w-[90vw]">
-              <ThemeToggle />
+          <ToastProvider>
+            <ObservabilityBootstrap />
+            <ServiceWorkerRegister />
+            <OfflineBanner />
+            <CookieConsent />
+            <div className="min-h-screen">
+              <div className="fixed top-4 right-6 z-50 max-w-[90vw]">
+                <ThemeToggle />
+              </div>
+              {children}
             </div>
-            {children}
-          </div>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

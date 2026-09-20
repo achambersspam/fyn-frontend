@@ -14,6 +14,29 @@ import { TEST_TOPICS } from './fixtures/test-topics';
 
 test.use({ storageState: 'e2e/.auth/session.json' });
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'fyn.cookie_consent.v1',
+      JSON.stringify({ analytics: false, at: '2026-09-20T00:00:00.000Z' })
+    );
+  });
+});
+
+test('get started path is /start then /auth for signed-out users', async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  await page.goto('/start');
+  await expect(
+    page.getByRole('heading', {
+      name: '3 step sign up to unlock personalized news just for you',
+    })
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Create Account' }).click();
+  await page.waitForURL('**/auth', { timeout: 10_000 });
+  await context.close();
+});
+
 test('completes 3-step setup wizard and reaches creating page', async ({ page }) => {
   // ── Step 1: Topic selection ──────────────────────────────────────────────────
   await page.goto('/setup/step-1');
@@ -54,8 +77,9 @@ test('completes 3-step setup wizard and reaches creating page', async ({ page })
   // ── Step 3: Delivery preferences ────────────────────────────────────────────
   await expect(page.locator('text=Your Delivery Settings')).toBeVisible({ timeout: 10_000 });
 
-  // Defaults (Daily, 09:00, system timezone) are acceptable — just submit.
-  await page.locator('button', { hasText: 'Create Your For You Newsletter' }).click();
+  const createButton = page.getByRole('button', { name: 'Create Your For You Newsletter' });
+  await expect(createButton).toBeEnabled({ timeout: 15_000 });
+  await createButton.click();
 
   // App POSTs to /api/newsletters and redirects to /setup/creating?newsletterId=XXX.
   await page.waitForURL(/\/setup\/creating\?newsletterId=/, { timeout: 20_000 });

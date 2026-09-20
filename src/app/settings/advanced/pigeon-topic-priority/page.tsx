@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, type ApiError } from "@/lib/api";
+import { errorMessage } from "@/lib/errorMessage";
+import { useToast } from "@/lib/useToast";
 import { getCurrentSession } from "@/lib/supabase";
 import type { Newsletter, NewsletterUpdatePayload } from "@/lib/apiContracts";
 import { allocateByPriority, inferPriorityFromSeconds } from "@/lib/allocateByPriority";
@@ -44,6 +46,7 @@ export default function PigeonTopicPriorityPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,11 +68,9 @@ export default function PigeonTopicPriorityPage() {
         }
       } catch (err) {
         if (cancelled) return;
-        const message =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load newsletters.";
+        const message = errorMessage(err, "Unable to load newsletters.");
         setError(message);
+        toast.error(message);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -154,7 +155,9 @@ export default function PigeonTopicPriorityPage() {
     if (!selectedNewsletter) return;
     setIsSaving(true);
     setError(null);
-    setSuccess(null);
+    setSuccess("Pigeon topic priorities saved.");
+    toast.success("Pigeon topic priorities saved.");
+    const previousRows = priorityRows;
     try {
       const payload: NewsletterUpdatePayload = {
         email: selectedNewsletter.email,
@@ -171,13 +174,12 @@ export default function PigeonTopicPriorityPage() {
         read_time_minutes: selectedNewsletter.read_time_minutes,
       };
       await api.put(`/api/newsletters/${selectedNewsletter.id}`, payload);
-      setSuccess("Pigeon topic priorities saved.");
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Failed to save priorities.";
+      const message = errorMessage(err, "Failed to save priorities.");
       setError(message);
+      setSuccess(null);
+      toast.error(message);
+      setPriorityRows(previousRows);
     } finally {
       setIsSaving(false);
     }

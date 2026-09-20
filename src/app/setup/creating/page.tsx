@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { getCurrentSession } from "@/lib/supabase";
+import { markArrivedFromCreating } from "@/lib/navCoachMarks";
 
 const START_HEADER = "Your newsletter is being created!";
 const DONE_HEADER =
@@ -608,13 +609,14 @@ function CreatingNewsletterContent() {
               <button
                 type="button"
                 className="btn-primary w-full max-w-md"
-                onClick={() =>
+                onClick={() => {
+                  markArrivedFromCreating();
                   router.push(
                     firstIssueDailyLimitHit
-                      ? "/dashboard?firstIssueLimitHit=1"
-                      : "/dashboard"
-                  )
-                }
+                      ? "/dashboard?firstIssueLimitHit=1&fromCreating=1"
+                      : "/dashboard?fromCreating=1"
+                  );
+                }}
               >
                 Go to Dashboard
               </button>

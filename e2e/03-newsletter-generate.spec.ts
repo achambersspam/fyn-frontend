@@ -29,7 +29,7 @@ test('newsletter generates successfully and dashboard shows read button', async 
   await expect(page.locator('button', { hasText: 'Retry' })).not.toBeVisible();
 
   await goToDashboard.click();
-  await page.waitForURL('**/dashboard', { timeout: 10_000 });
+  await page.waitForURL((url) => url.pathname === '/dashboard', { timeout: 10_000 });
 
   // The newsletter card should now show "Read Your Newsletter".
   await expect(page.getByRole('button', { name: 'Read Your Newsletter' })).toBeVisible({

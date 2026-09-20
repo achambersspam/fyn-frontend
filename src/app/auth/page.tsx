@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import type { Profile } from "@/lib/apiContracts";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { identifyUser, trackEvent } from "@/lib/analytics";
+import { errorMessage } from "@/lib/errorMessage";
 
 const AUTH_SIGNIN_DRAFT_KEY = "auth_signin_draft_v1";
 const AUTH_POST_TARGET_KEY = "auth_post_target_v1";
@@ -261,10 +262,7 @@ export default function AuthPage() {
         return;
       }
     } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Something went wrong. Please try again.";
+      const message = errorMessage(err, "Something went wrong. Please try again.");
       if (mountedRef.current) {
         setError(message);
       }
@@ -296,10 +294,7 @@ export default function AuthPage() {
       if (resetError) throw resetError;
       setResetMessage("Password reset link sent. Check your email to continue.");
     } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Unable to send reset link. Please try again.";
+      const message = errorMessage(err, "Unable to send reset link. Please try again.");
       setError(message);
     } finally {
       setIsSendingReset(false);
@@ -327,7 +322,7 @@ export default function AuthPage() {
         },
       });
       if (oauthError && mountedRef.current) {
-        setError(oauthError.message);
+        setError(errorMessage(oauthError, "Unable to continue with Google. Please try again."));
       }
     } finally {
       if (mountedRef.current) {
@@ -385,6 +380,7 @@ export default function AuthPage() {
               placeholder="Enter your email"
               status={validation.status("email")}
               errorMessage={validation.error("email")}
+              ref={validation.register("email")}
               value={formData.email}
               onChange={(e) => {
                 setFormData((d) => ({ ...d, email: e.target.value }));
@@ -401,6 +397,7 @@ export default function AuthPage() {
               placeholder="Enter your password"
               status={validation.status("password")}
               errorMessage={validation.error("password")}
+              ref={validation.register("password")}
               value={formData.password}
               onChange={(e) => {
                 setFormData((d) => ({ ...d, password: e.target.value }));

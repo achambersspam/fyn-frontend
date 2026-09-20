@@ -7,6 +7,9 @@ import { api, type ApiError } from "@/lib/api";
 import type { Newsletter, NewsletterIssue } from "@/lib/apiContracts";
 import { getCurrentSession } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
+import { errorMessage } from "@/lib/errorMessage";
+import { cacheLastReadIssue } from "@/lib/lastIssueCache";
+import Spinner from "@/components/Spinner";
 
 export default function ReadNewsletterPage() {
   const router = useRouter();
@@ -39,6 +42,7 @@ export default function ReadNewsletterPage() {
         if (cancelled) return;
         setNewsletter(nl);
         setIssue(latest);
+        void cacheLastReadIssue();
         void trackEvent("newsletter_read_in_dashboard", {
           source: "read_page",
           newsletter_id: id,
@@ -50,10 +54,7 @@ export default function ReadNewsletterPage() {
           router.replace("/auth");
           return;
         }
-        const message =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load your newsletter issue.";
+        const message = errorMessage(err, "Unable to load your newsletter issue.");
         setError(message);
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -82,7 +83,7 @@ export default function ReadNewsletterPage() {
         {isLoading && (
           <div className="bg-white rounded-2xl p-5 border border-gray-200 text-gray-500 font-semibold dark:bg-slate-900 dark:border-slate-800 dark:text-gray-400">
             <div className="flex items-center justify-center gap-2">
-              <span className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-500 animate-spin dark:border-sky-800 dark:border-t-sky-400" />
+              <Spinner size={16} />
               <span>Loading your newsletter...</span>
             </div>
           </div>

@@ -26,7 +26,7 @@ export default function PublicSiteNav({ settingsHref }: PublicSiteNavProps) {
             Log In
           </Link>
           <Link
-            href="/auth"
+            href="/start"
             className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
           >
             Get Started

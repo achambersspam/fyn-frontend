@@ -6,6 +6,8 @@ import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 import { api } from "@/lib/api";
+import { errorMessage } from "@/lib/errorMessage";
+import { useFieldFocus } from "@/lib/useFieldFocus";
 import * as Icons from "@/components/Icons";
 import {
   TIER_LIMITS,
@@ -26,7 +28,7 @@ import {
 } from "@/lib/timezones";
 import { validateTopicDetailsPreflight } from "@/lib/topics/validateTopicDetails";
 import { normalizeTopicDetailsForSave } from "@/lib/topics/normalizeTopicDetailsForSave";
-import { allocateByPriority } from "@/lib/allocateByPriority";
+import { allocateSeconds } from "@/lib/allocateByPriority";
 import TopicDetailEditor from "@/components/topic-details/TopicDetailEditor";
 
 const FREQUENCIES = ["Daily", "Mon/Wed/Fri", "Weekly", "Bi-Weekly", "Monthly"];
@@ -65,6 +67,7 @@ type PersistedSetupDraft = {
   timezone: string;
   genericFallbackTopics: Record<string, boolean>;
   weatherMissingPromptCount: number;
+  idempotencyKey?: string;
 };
 
 const normalizeTier = (value: unknown): Tier => {
@@ -128,6 +131,7 @@ const buildCurrentDraft = (input: {
   timezone: string;
   genericFallbackTopics: Record<string, boolean>;
   weatherMissingPromptCount: number;
+  idempotencyKey?: string;
 }): PersistedSetupDraft => ({
   ownerUserId: input.ownerUserId,
   selectedTopics: input.selectedTopics,
@@ -140,6 +144,7 @@ const buildCurrentDraft = (input: {
   timezone: input.timezone,
   genericFallbackTopics: input.genericFallbackTopics,
   weatherMissingPromptCount: input.weatherMissingPromptCount,
+  idempotencyKey: input.idempotencyKey,
 });
 
 const clearPersistedDraft = (userId: string) => {
@@ -171,6 +176,8 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
     "step2" | "step3" | "back" | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+  const [topicsRequiredError, setTopicsRequiredError] = useState(false);
+  const { register, focusFirstInvalid } = useFieldFocus();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState("");
   const [hasExistingNewsletter, setHasExistingNewsletter] = useState(false);
@@ -182,13 +189,13 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
   const [weatherMissingPromptCount, setWeatherMissingPromptCount] = useState(0);
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState("");
   const hasTopicInteractionRef = useRef(false);
   const onboardingTrackedRef = useRef(false);
   const submitInFlightRef = useRef(false);
   const createClickStartedAtRef = useRef<number | null>(null);
 
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
-  const totalSeconds = readTimeMin * 60;
 
   const timeOptions = useMemo(
     () =>
@@ -198,20 +205,6 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         limits.incrementMinutes
       ),
     [limits]
-  );
-
-  const defaultPriorityMap = useMemo(
-    () =>
-      selectedTopics.reduce<Record<string, number>>((acc, topic) => {
-        acc[topic] = 3;
-        return acc;
-      }, {}),
-    [selectedTopics]
-  );
-
-  const topicSeconds = useMemo(
-    () => allocateByPriority(totalSeconds, defaultPriorityMap),
-    [totalSeconds, defaultPriorityMap]
   );
 
   useEffect(() => {
@@ -267,6 +260,12 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
             setGenericFallbackTopics(draft.genericFallbackTopics || {});
             setWeatherMissingPromptCount(draft.weatherMissingPromptCount || 0);
           }
+          const draftKey = draft?.idempotencyKey?.trim() || "";
+          setIdempotencyKey(
+            /^[a-zA-Z0-9-]{8,64}$/.test(draftKey)
+              ? draftKey
+              : crypto.randomUUID()
+          );
           setIsHydrated(true);
         }
       }
@@ -307,6 +306,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
       timezone,
       genericFallbackTopics,
       weatherMissingPromptCount,
+      idempotencyKey,
     });
   }, [
     isHydrated,
@@ -321,6 +321,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
     timezone,
     genericFallbackTopics,
     weatherMissingPromptCount,
+    idempotencyKey,
     step,
   ]);
 
@@ -465,7 +466,30 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
   };
 
   const submitNewsletter = async () => {
-    if (!canSubmit || submitInFlightRef.current) return;
+    if (submitInFlightRef.current || isSubmitting || navigationIntent !== null) return;
+    if (!isHydrated || !currentUserId) {
+      setError("Unable to load your session. Please try again.");
+      return;
+    }
+    if (selectedTopics.length === 0) {
+      setError("Please go back to Step 1 and choose your topics before creating your newsletter.");
+      return;
+    }
+    const missing: string[] = [];
+    if (!frequency) missing.push("frequency");
+    if (!deliveryTime) missing.push("deliveryTime");
+    if (!timezone) missing.push("timezone");
+    if (requiresWeekday && !(scheduleWeekday >= 1 && scheduleWeekday <= 5)) {
+      missing.push("weekday");
+    }
+    if (requiresMonthlyDay && !(monthlyDayOfMonth >= 1 && monthlyDayOfMonth <= 31)) {
+      missing.push("monthlyDay");
+    }
+    if (missing.length > 0) {
+      setError("This field is required.");
+      focusFirstInvalid(missing);
+      return;
+    }
     submitInFlightRef.current = true;
     createClickStartedAtRef.current = performance.now();
     const resolvedTopicDetails = buildResolvedTopicDetails();
@@ -497,11 +521,13 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
     const selectedTimezone = getTimezoneOptionByValue(timezone);
     const payload: NewsletterCreatePayload = {
       email,
-      topics: selectedTopics.map((topic) => ({
-        topic,
-        specific_details: resolvedTopicDetails[topic] || undefined,
-        allocated_seconds: topicSeconds[topic] ?? 20,
-      })),
+      topics: allocateSeconds({
+        topics: selectedTopics.map((topic) => ({
+          topic,
+          specific_details: resolvedTopicDetails[topic] || undefined,
+        })),
+        readTimeMinutes: readTimeMin,
+      }),
       frequency,
       delivery_time: deliveryTime,
       timezone: selectedTimezone?.iana || "America/New_York",
@@ -511,7 +537,11 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
     };
 
     try {
-      const created = await api.post<Newsletter>("/api/newsletters", payload);
+      const created = await api.post<Newsletter>(
+        "/api/newsletters",
+        payload,
+        idempotencyKey ? { idempotencyKey } : undefined
+      );
       void trackEvent("setup_step_3_completed", { topic_count: selectedTopics.length });
       void trackEvent("onboarding_completed", { topic_count: selectedTopics.length });
       void trackEvent("newsletter_created", {
@@ -544,7 +574,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         details?: unknown;
         code?: string;
       } | null;
-      const baseMsg = apiErr?.message || "Failed to create newsletter.";
+      const baseMsg = errorMessage(err, "Failed to create newsletter.");
       const hasInternalDebugSignal =
         /critical|canonical_entity|provider id|topic_key|before insert/i.test(baseMsg);
       const msg = hasInternalDebugSignal
@@ -607,6 +637,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
       return;
     }
     setSelectedTopics((prev) => [...prev, label]);
+    setTopicsRequiredError(false);
   };
 
   const openStep2 = () => {
@@ -616,7 +647,9 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         flow: "setup_step_1",
         reason: "no_topics_selected",
       });
-      setError("Select at least one topic to continue.");
+      setTopicsRequiredError(true);
+      setError("This field is required.");
+      focusFirstInvalid(["topics"]);
       return;
     }
     if (!currentUserId) {
@@ -639,6 +672,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         timezone,
         genericFallbackTopics,
         weatherMissingPromptCount,
+        idempotencyKey,
       })
     );
     setError(null);
@@ -662,6 +696,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         timezone,
         genericFallbackTopics,
         weatherMissingPromptCount,
+        idempotencyKey,
       })
     );
   };
@@ -706,7 +741,15 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
 
   const renderTopicSelectionSection = (
     <>
-      <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
+      <section
+        ref={register("topics")}
+        tabIndex={-1}
+        className={`rounded-xl border bg-white/50 dark:bg-slate-900/50 p-6 space-y-4 ${
+          topicsRequiredError
+            ? "border-red-400 dark:border-red-500/60"
+            : "border-gray-200 dark:border-gray-700"
+        }`}
+      >
         <h2 className="text-lg font-black text-gray-900 dark:text-gray-100">
           Choose Your Topics
         </h2>
@@ -714,6 +757,11 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           Select at least 1 topic.{" "}
           {limits.maxTopics !== Infinity && `Max ${limits.maxTopics} on your plan.`}
         </p>
+        {topicsRequiredError && (
+          <p className="text-xs font-semibold text-red-500" role="alert">
+            This field is required.
+          </p>
+        )}
         <div className="grid grid-cols-2 items-stretch sm:grid-cols-3 gap-4">
           {TOPIC_OPTIONS.map((topic) => {
             const isSelected = selectedTopics.includes(topic.label);
@@ -840,7 +888,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
           Frequency
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" ref={register("frequency")}>
           {FREQUENCIES.map((f) => (
             <button
               key={f}
@@ -859,7 +907,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
               {weekdayHelperText}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" ref={register("weekday")}>
               {WEEKDAY_OPTIONS.map((day) => (
                 <button
                   key={day.value}
@@ -882,7 +930,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
               Choose a day of month
             </label>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-2" ref={register("monthlyDay")}>
               {MONTH_DAY_OPTIONS.map((day) => (
                 <button
                   key={day}
@@ -907,6 +955,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           Delivery Time
         </label>
         <select
+          ref={register("deliveryTime")}
           value={deliveryTime}
           onChange={(e) => setDeliveryTime(e.target.value)}
           className="input-field"
@@ -924,6 +973,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           Timezone
         </label>
         <select
+          ref={register("timezone")}
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
           className="input-field"
@@ -1060,10 +1110,19 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
             <button
               type="button"
               onClick={submitNewsletter}
-              disabled={!canSubmit || navigationIntent !== null}
+              disabled={
+                isSubmitting ||
+                navigationIntent !== null ||
+                !isHydrated ||
+                !currentUserId
+              }
               className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              {isSubmitting ? "Creating your newsletter..." : "Create Your For You Newsletter"}
+              {isSubmitting
+                ? "Creating your newsletter..."
+                : !isHydrated || !currentUserId
+                  ? "Loading your session..."
+                  : "Create Your For You Newsletter"}
             </button>
             <button
               type="button"
@@ -1072,7 +1131,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
                 persistDraftNow();
                 router.push("/setup/step-2");
               }}
-              disabled={isSubmitting || navigationIntent !== null}
+              disabled={navigationIntent !== null}
               className="w-full rounded-xl border border-primary bg-transparent px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-primary/5"
             >
               Go back to Step 2 - Type Your Topic Details

@@ -1,5 +1,6 @@
 import posthog from "posthog-js";
 import { api } from "@/lib/api";
+import { isAnalyticsAllowed } from "@/lib/cookieConsent";
 
 const SENSITIVE_KEY_PATTERN =
   /password|token|secret|authorization|cookie|html|body|specific_details|details|raw/i;
@@ -29,7 +30,7 @@ export const trackEvent = (
   properties: Record<string, unknown> = {}
 ) => {
   const safeProperties = sanitizeProperties(properties);
-  if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (process.env.NEXT_PUBLIC_POSTHOG_KEY && isAnalyticsAllowed()) {
     try {
       posthog.capture(eventName, safeProperties);
     } catch {
@@ -58,12 +59,12 @@ export const identifyUser = (
   userId: string,
   properties: Record<string, unknown> = {}
 ) => {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY || !userId) return;
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY || !userId || !isAnalyticsAllowed()) return;
   const safeProperties = sanitizeProperties(properties);
   posthog.identify(userId, safeProperties);
 };
 
 export const resetAnalyticsIdentity = () => {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY || !isAnalyticsAllowed()) return;
   posthog.reset();
 };
