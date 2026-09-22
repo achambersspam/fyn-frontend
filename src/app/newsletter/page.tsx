@@ -14,6 +14,7 @@ import { TIER_LIMITS } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
 import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
 import { useToast } from "@/lib/useToast";
+import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
 
 export default function NewsletterPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function NewsletterPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showChooseActive, setShowChooseActive] = useState(false);
   const [isNavigatingCreate, setIsNavigatingCreate] = useState(false);
   const showSkeleton = useDelayedVisibility(isLoading, 200);
   const { toast } = useToast();
@@ -135,20 +137,44 @@ export default function NewsletterPage() {
           </div>
         )}
 
+        {!isLoading && newsletters.some((nl) => nl.disabled) && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 space-y-2">
+            <p>
+              Extra newsletters stay in your account as <strong>Disabled</strong>{" "}
+              after a plan change. Nothing is deleted.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowChooseActive(true)}
+              className="font-bold text-primary hover:underline"
+            >
+              Choose which stay enabled
+            </button>
+          </div>
+        )}
+
         {!isLoading && newsletters.map((nl) => (
           <Link
             key={nl.id}
             href={`/newsletter/${nl.id}`}
-            className="block bg-white rounded-2xl p-5 border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800"
+            className={`block bg-white rounded-2xl p-5 border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800 relative overflow-hidden ${
+              nl.disabled ? "opacity-70" : ""
+            }`}
           >
-            <div className="flex items-center justify-between">
+            {nl.disabled ? (
+              <span className="absolute right-4 top-4 rounded-full bg-slate-800 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                Disabled
+              </span>
+            ) : null}
+            <div className={`flex items-center justify-between ${nl.disabled ? "blur-[1px]" : ""}`}>
               <div className="space-y-1">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100">
                   {nl.title || nl.email}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {nl.topics.length} topic{nl.topics.length !== 1 ? "s" : ""} ·{" "}
-                  {nl.frequency} · {nl.paused ? "Paused" : "Active"}
+                  {nl.frequency} ·{" "}
+                  {nl.disabled ? "Disabled" : nl.paused ? "Paused" : "Active"}
                 </p>
               </div>
               <ChevronRight
@@ -210,6 +236,14 @@ export default function NewsletterPage() {
           </div>
         </div>
       )}
+
+      <ChooseActiveNewslettersModal
+        open={showChooseActive}
+        newsletters={newsletters}
+        cap={limits.maxNewsletters}
+        onClose={() => setShowChooseActive(false)}
+        onSaved={setNewsletters}
+      />
 
       <BottomNav />
     </div>

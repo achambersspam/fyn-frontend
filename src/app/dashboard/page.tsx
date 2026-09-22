@@ -24,7 +24,9 @@ import type {
   NewsletterIssue,
   Profile,
 } from "@/lib/apiContracts";
+import { TIER_LIMITS } from "@/lib/apiContracts";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
 
 const WEEKDAY_LABELS: Record<number, string> = {
   1: "Monday",
@@ -90,6 +92,7 @@ function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [togglingPause, setTogglingPause] = useState<string | null>(null);
   const [isResubscribing, setIsResubscribing] = useState(false);
+  const [showChooseActive, setShowChooseActive] = useState(false);
   const showFirstIssueLimitNotice = searchParams.get("firstIssueLimitHit") === "1";
   const showSkeleton = useDelayedVisibility(isLoading, 200);
   const { toast } = useToast();
@@ -199,20 +202,28 @@ function DashboardPage() {
   }, [isLoading, newsletters.length]);
 
   const togglePause = async (nl: Newsletter) => {
+    if (nl.disabled && nl.paused) {
+      setShowChooseActive(true);
+      return;
+    }
     setTogglingPause(nl.id);
-    // Optimistic: flip immediately so the button responds on tap, then reconcile
-    // with the server. Revert if the request fails.
     const previousPaused = nl.paused;
     setNewsletters((prev) =>
       prev.map((n) => (n.id === nl.id ? { ...n, paused: !previousPaused } : n))
     );
     try {
       await api.patch(`/api/newsletters/${nl.id}/pause`);
-    } catch {
+    } catch (err) {
       setNewsletters((prev) =>
         prev.map((n) => (n.id === nl.id ? { ...n, paused: previousPaused } : n))
       );
-      setError("Couldn't update your newsletter. Please try again.");
+      const apiErr = err as ApiError;
+      if (apiErr?.code === "NEWSLETTER_ACTIVE_CAP") {
+        setShowChooseActive(true);
+        setError(errorMessage(apiErr));
+      } else {
+        setError("Couldn't update your newsletter. Please try again.");
+      }
     } finally {
       setTogglingPause(null);
     }
@@ -232,7 +243,14 @@ function DashboardPage() {
     }
   };
 
-  const primary = newsletters[0] ?? null;
+  const primary =
+    newsletters.find((nl) => !nl.paused && !nl.disabled) ||
+    newsletters.find((nl) => !nl.disabled) ||
+    newsletters[0] ||
+    null;
+  const newsletterCap =
+    TIER_LIMITS[profile?.tier ?? "basic"]?.maxNewsletters ?? 1;
+  const hasDisabledNewsletters = newsletters.some((nl) => nl.disabled);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-slate-950">
@@ -276,7 +294,26 @@ function DashboardPage() {
                 Your preferences are saved. You already generated a first issue today, so your next issue will arrive at your scheduled delivery time.
               </div>
             )}
-            {primary.paused && (
+            {hasDisabledNewsletters && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 space-y-2">
+                <p className="font-semibold">
+                  Extra newsletters are Disabled, not deleted. Your plan includes{" "}
+                  {newsletterCap} active newsletter{newsletterCap === 1 ? "" : "s"}.
+                </p>
+                <p>
+                  You can still open them. Re-enable one by disabling or deleting an
+                  active newsletter, or by resubscribing.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowChooseActive(true)}
+                  className="font-bold text-primary hover:underline"
+                >
+                  Choose which stay enabled
+                </button>
+              </div>
+            )}
+            {primary.paused && !primary.disabled && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
                 Your newsletter is currently paused. Resume to continue
                 receiving deliveries.
@@ -295,8 +332,17 @@ function DashboardPage() {
                 return (
                   <div
                     key={nl.id}
-                    className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4"
+                    className={`bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4 relative overflow-hidden ${
+                      nl.disabled ? "opacity-70" : ""
+                    }`}
                   >
+                    {nl.disabled ? (
+                      <div className="absolute inset-0 z-10 bg-white/55 backdrop-blur-[2px] dark:bg-slate-950/55 flex items-start justify-end p-4 pointer-events-none">
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
+                          Disabled
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex items-center justify-between gap-3">
                       <p className="min-w-0 flex-1 text-base font-bold text-gray-900 truncate dark:text-gray-100">
                         {nl.title || "Newsletter"}
@@ -363,7 +409,10 @@ function DashboardPage() {
               })}
             </div>
 
-            <GenerateNowCard newsletters={newsletters} profile={profile} />
+            <GenerateNowCard
+              newsletters={newsletters.filter((nl) => !nl.disabled)}
+              profile={profile}
+            />
 
             {/* Next Send / Pause */}
             <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4">
@@ -378,7 +427,9 @@ function DashboardPage() {
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {primary.paused
-                        ? "Paused"
+                        ? primary.disabled
+                          ? "Disabled on this plan"
+                          : "Paused"
                         : primary.next_send_at_utc
                           ? new Date(primary.next_send_at_utc).toLocaleString()
                           : "Calculating..."}
@@ -388,13 +439,19 @@ function DashboardPage() {
 
                 <Tooltip
                   label={
-                    primary.paused
+                    primary.disabled
+                      ? "This newsletter is Disabled on your current plan"
+                      : primary.paused
                       ? "Resume scheduled delivery of this newsletter"
                       : "Pause delivery — no new issues until you resume"
                   }
                 >
                   <button
-                    onClick={() => togglePause(primary)}
+                    onClick={() =>
+                      primary.disabled
+                        ? setShowChooseActive(true)
+                        : void togglePause(primary)
+                    }
                     disabled={togglingPause === primary.id}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
                       primary.paused
@@ -402,7 +459,9 @@ function DashboardPage() {
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
                     }`}
                   >
-                    {primary.paused ? (
+                    {primary.disabled ? (
+                      "Choose enabled"
+                    ) : primary.paused ? (
                       <>
                         <Play size={16} /> Resume
                       </>
@@ -467,6 +526,14 @@ function DashboardPage() {
           </>
         )}
       </div>
+
+      <ChooseActiveNewslettersModal
+        open={showChooseActive}
+        newsletters={newsletters}
+        cap={newsletterCap}
+        onClose={() => setShowChooseActive(false)}
+        onSaved={setNewsletters}
+      />
 
       <BottomNav />
     </div>

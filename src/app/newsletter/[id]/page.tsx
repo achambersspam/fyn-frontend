@@ -105,6 +105,8 @@ export default function EditNewsletterPage() {
   const [nearSendWarning, setNearSendWarning] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
 
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
   const totalSeconds = readTimeMin * 60;
@@ -244,6 +246,7 @@ export default function EditNewsletterPage() {
         setTimezone(getTimezoneOptionByIana(nl.timezone)?.value || DEFAULT_TIMEZONE_VALUE);
         setEmail(nl.email ?? "");
         setNextSend(nl.next_send_at_utc ?? null);
+        setIsDisabled(Boolean(nl.disabled));
 
         const snap = JSON.stringify({
           selectedTopics: topics,
@@ -562,6 +565,44 @@ export default function EditNewsletterPage() {
       </div>
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-8">
+        {isDisabled && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 space-y-2">
+            <p className="font-semibold">This newsletter is Disabled on your current plan.</p>
+            <p>
+              It is still saved. Re-enable it by disabling or deleting another active
+              newsletter, or by resubscribing.
+            </p>
+            <button
+              type="button"
+              disabled={isReactivating}
+              onClick={async () => {
+                setIsReactivating(true);
+                try {
+                  await api.patch(`/api/newsletters/${id}/pause`, { is_paused: false });
+                  setIsDisabled(false);
+                  toast.success("Newsletter enabled.");
+                } catch (err) {
+                  const apiErr = err as ApiError;
+                  toast.error(
+                    errorMessage(
+                      apiErr,
+                      "Disable or delete your active newsletter first, or resubscribe."
+                    )
+                  );
+                  if (apiErr?.code === "NEWSLETTER_ACTIVE_CAP") {
+                    router.push("/newsletter");
+                  }
+                } finally {
+                  setIsReactivating(false);
+                }
+              }}
+              className="font-bold text-primary hover:underline disabled:opacity-60"
+            >
+              {isReactivating ? "Enabling…" : "Try to re-enable"}
+            </button>
+          </div>
+        )}
+
         {nearSendWarning && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
             Your next newsletter is scheduled within 30 minutes. Changes may

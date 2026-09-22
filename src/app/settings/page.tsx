@@ -433,7 +433,12 @@ function SettingsPage() {
                     day: "numeric",
                     year: "numeric",
                   })}
-                  . You'll be charged $9.99 on{" "}
+                  . You'll be charged{" "}
+                  {subscription.plan === "plus" ||
+                  subscription.tier === "minimum"
+                    ? "$4.99"
+                    : "$9.99"}{" "}
+                  on{" "}
                   {new Date(subscription.trial_end).toLocaleDateString(undefined, {
                     month: "long",
                     day: "numeric",

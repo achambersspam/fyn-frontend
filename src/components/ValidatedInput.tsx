@@ -9,6 +9,8 @@ type ValidatedInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   status: Status;
   errorMessage?: string | null;
+  /** When false, never show the green ring/check — only errors. Use on auth fields. */
+  showValidState?: boolean;
   /** Optional element rendered inside the field on the right (e.g. a show-password toggle). */
   trailing?: ReactNode;
 };
@@ -19,15 +21,28 @@ type ValidatedInputProps = InputHTMLAttributes<HTMLInputElement> & {
  * so an untouched form never looks like it's judging the user.
  */
 const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
-  ({ label, status, errorMessage, trailing, className, ...inputProps }, ref) => {
+  (
+    {
+      label,
+      status,
+      errorMessage,
+      showValidState = true,
+      trailing,
+      className,
+      ...inputProps
+    },
+    ref
+  ) => {
+    const visualStatus =
+      status === "valid" && !showValidState ? "idle" : status;
     const ringClass =
-      status === "error"
+      visualStatus === "error"
         ? "border-red-400 focus:border-red-500 focus:ring-red-200 dark:border-red-500/60"
-        : status === "valid"
+        : visualStatus === "valid"
           ? "border-emerald-400 focus:border-emerald-500 focus:ring-emerald-200 dark:border-emerald-500/60"
           : "";
 
-    const showCheck = status === "valid";
+    const showCheck = visualStatus === "valid";
     const rightPad = trailing ? "pr-12" : showCheck ? "pr-10" : "";
 
     return (

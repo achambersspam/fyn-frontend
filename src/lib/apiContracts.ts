@@ -57,6 +57,7 @@ export type Newsletter = {
   monthly_day_of_month?: number;
   read_time_minutes: number;
   paused: boolean;
+  disabled?: boolean;
   next_send_at_utc?: string;
   created_at?: string;
   updated_at?: string;

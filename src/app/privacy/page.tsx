@@ -136,11 +136,12 @@ export default function PrivacyPage() {
 
         <Section title="Trials, billing, and cancellation">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            New Premium subscribers who have never used a trial receive a 7-day free trial.
-            Unless you cancel, your card is charged $9.99 when the trial ends. We send a
-            reminder 48–72 hours before that charge. Canceling a paid plan takes effect at
-            period end; your account and data stay until you delete them. Cancel from Settings
-            or Stripe&apos;s customer portal — both are valid.
+            New Plus or Premium subscribers who have never used a trial receive a 7-day free
+            trial. Unless you cancel, your card is charged $4.99 (Plus) or $9.99 (Premium)
+            when the trial ends. We send a reminder 48–72 hours before that charge. Canceling
+            a paid plan takes effect at period end; your account and data stay until you
+            delete them. Cancel from Settings or Stripe&apos;s customer portal — both are
+            valid.
           </p>
         </Section>
 

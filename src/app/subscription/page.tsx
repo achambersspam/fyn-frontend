@@ -60,7 +60,8 @@ const plans: PlanCard[] = [
       "Expanded delivery windows",
       "May include sponsored content",
     ],
-    cta: "Upgrade to Plus",
+    cta: "Start 7-day free trial",
+    subtext: "Credit card required. Cancel anytime.",
     disabled: false,
     emphasized: false,
   },
@@ -138,10 +139,15 @@ export default function SubscriptionPage() {
         year: "numeric",
       })
     : "";
-  const premiumCta =
-    subscription?.has_used_trial === true
-      ? "Upgrade to Premium"
-      : "Start 7-day free trial";
+  const trialAvailable = subscription?.has_used_trial !== true;
+  const plusCta = trialAvailable ? "Start 7-day free trial" : "Upgrade to Plus";
+  const premiumCta = trialAvailable
+    ? "Start 7-day free trial"
+    : "Upgrade to Premium";
+  const trialChargeLabel =
+    subscription?.plan === "plus" || subscription?.tier === "minimum"
+      ? "$4.99"
+      : "$9.99";
 
   const handleCheckout = async (planId: string) => {
     if (planId === "basic") return;
@@ -336,8 +342,8 @@ export default function SubscriptionPage() {
 
         {isTrialing ? (
           <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800 text-center dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-100">
-            Free trial — ends {trialDateLabel}. You'll be charged $9.99 on{" "}
-            {trialDateLabel} unless you cancel.
+            Free trial — ends {trialDateLabel}. You'll be charged{" "}
+            {trialChargeLabel} on {trialDateLabel} unless you cancel.
           </div>
         ) : null}
 
@@ -446,7 +452,9 @@ export default function SubscriptionPage() {
                           ? "Upgrade via Manage billing"
                           : plan.id === "premium"
                             ? premiumCta
-                            : plan.cta}
+                            : plan.id === "plus"
+                              ? plusCta
+                              : plan.cta}
                 </button>
 
                 {plan.subtext && (

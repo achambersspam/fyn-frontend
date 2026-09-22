@@ -137,6 +137,8 @@ export default function CancelSubscriptionPage() {
               </>
             ) : null}
             . You keep access until then. You can resume anytime from Settings.
+            Extra newsletters are not deleted when you return to Free — they stay
+            in your account as Disabled so you can choose which one stays enabled.
           </p>
           <button
             onClick={() => router.push("/dashboard")}
@@ -236,8 +238,10 @@ export default function CancelSubscriptionPage() {
                 </li>
                 <li>
                   • If you later fall to the free tier and have more newsletters
-                  than it allows, your oldest newsletter is kept and extras are
-                  paused.
+                  than it allows, extras stay in your account as Disabled. You
+                  choose which one stays enabled. Topics are kept; you can
+                  re-enable extras by disabling or deleting the active one, or by
+                  resubscribing.
                 </li>
               </ul>
             </div>

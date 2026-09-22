@@ -18,6 +18,21 @@ const AUTH_SIGNIN_DRAFT_KEY = "auth_signin_draft_v1";
 const AUTH_POST_TARGET_KEY = "auth_post_target_v1";
 const AUTH_SETUP_BACK_BYPASS_KEY = "auth_setup_back_bypass_v1";
 const SETUP_DRAFT_STORAGE_KEY = "fyn.setupDraft.v2";
+
+const authErrorLooksLike = (message: string, needles: string[]) => {
+  const lower = message.toLowerCase();
+  return needles.some((needle) => lower.includes(needle));
+};
+
+const isAlreadyRegisteredError = (message: string) =>
+  authErrorLooksLike(message, ["already", "exists", "registered"]);
+
+const isUnconfirmedEmailError = (message: string) =>
+  authErrorLooksLike(message, ["confirm", "not confirmed"]);
+
+const isInvalidCredentialsError = (message: string) =>
+  authErrorLooksLike(message, ["invalid login", "invalid credentials", "invalid email or password"]);
+
 const clearLegacySetupDraftStorage = () => {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(SETUP_DRAFT_STORAGE_KEY);
@@ -41,6 +56,7 @@ export default function AuthPage() {
   const mountedRef = useRef(true);
   const redirectingRef = useRef(false);
   const setupBackBypassRef = useRef(false);
+  const submittingRef = useRef(false);
 
   const supabase = getSupabaseBrowserClient();
 
@@ -161,10 +177,12 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current || isSubmitting) return;
     setupBackBypassRef.current = false;
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(AUTH_SETUP_BACK_BYPASS_KEY);
     }
+    submittingRef.current = true;
     if (mountedRef.current) {
       setIsSubmitting(true);
       setError(null);
@@ -172,6 +190,7 @@ export default function AuthPage() {
 
     // On submit, surface any remaining field errors (all at once) and block.
     if (!validation.validateAll()) {
+      submittingRef.current = false;
       if (mountedRef.current) {
         setError(null);
         setIsSubmitting(false);
@@ -179,94 +198,136 @@ export default function AuthPage() {
       return;
     }
 
+    const email = formData.email.trim();
+    const password = formData.password;
+
+    const continueWithSession = (kind: "signup" | "signin") => {
+      void trackEvent(kind === "signup" ? "signup_completed" : "login_completed", {
+        auth_method: "email_password",
+      });
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(AUTH_SIGNIN_DRAFT_KEY);
+        if (kind === "signup") {
+          window.sessionStorage.setItem(AUTH_POST_TARGET_KEY, "/setup");
+        }
+      }
+      if (kind === "signup") {
+        try {
+          void api.patch<Profile>("/api/me", {
+            onboarding_complete: false,
+            tier: "basic",
+          });
+        } catch {
+          /* profile may already exist */
+        }
+        router.replace("/setup");
+        return;
+      }
+      router.replace("/dashboard");
+    };
+
+    const signInWithPassword = async () =>
+      supabase.auth.signInWithPassword({ email, password });
+
     try {
       if (mode === "signup") {
         void trackEvent("signup_started", { auth_method: "email_password" });
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
+          email,
+          password,
         });
 
-        if (signUpError) {
-          if (
-            signUpError.message
-              .toLowerCase()
-              .includes("already") ||
-            signUpError.message
-              .toLowerCase()
-              .includes("exists")
-          ) {
-            if (mountedRef.current) {
+        const tryExistingAccountSignIn = async (fallbackMessage: string) => {
+          const { data: signedIn, error: signInError } = await signInWithPassword();
+          if (signedIn.session) {
+            continueWithSession("signin");
+            return;
+          }
+          if (mountedRef.current) {
+            setMode("signin");
+            if (signInError && isUnconfirmedEmailError(signInError.message)) {
               setError(
-                "An account with this email already exists. Please sign in instead."
+                "This email is already registered. Confirm it from the link we sent, then sign in."
               );
-              setMode("signin");
-              setIsSubmitting(false);
+            } else if (signInError && isInvalidCredentialsError(signInError.message)) {
+              setError(
+                "An account with this email already exists. Sign in with that password, or use Forgot password."
+              );
+            } else {
+              setError(fallbackMessage);
             }
+            setIsSubmitting(false);
+          }
+          submittingRef.current = false;
+        };
+
+        if (signUpError) {
+          if (isAlreadyRegisteredError(signUpError.message)) {
+            await tryExistingAccountSignIn(
+              "An account with this email already exists. Please sign in instead."
+            );
             return;
           }
           throw signUpError;
         }
 
-        if (data.user && !data.session) {
-          if (mountedRef.current) {
-            setMode("signin");
-            setError("Account created! Please check your email to confirm, then sign in.");
-            setIsSubmitting(false);
-          }
-          return;
-        }
-
         if (data.session) {
-          void trackEvent("signup_completed", { auth_method: "email_password" });
-          if (typeof window !== "undefined") {
-            window.sessionStorage.setItem(AUTH_POST_TARGET_KEY, "/setup");
-          }
-          try {
-            void api.patch<Profile>("/api/me", {
-              onboarding_complete: false,
-              tier: "basic",
-            });
-          } catch {
-            /* profile may already exist */
-          }
-          router.push("/setup");
+          continueWithSession("signup");
           return;
         }
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
 
-        if (signInError) throw signInError;
-        void trackEvent("login_completed", { auth_method: "email_password" });
-        if (typeof window !== "undefined") {
-          window.sessionStorage.removeItem(AUTH_SIGNIN_DRAFT_KEY);
+        const identities = data.user?.identities ?? [];
+        const looksLikeDuplicate = Boolean(data.user) && identities.length === 0;
+        if (looksLikeDuplicate) {
+          await tryExistingAccountSignIn(
+            "An account with this email already exists. Please sign in instead."
+          );
+          return;
         }
-        // Route immediately for snappier UX, then correct to setup if needed.
-        router.push("/dashboard");
 
-        try {
-          const profile = await api.get<Profile>("/api/me");
-          if (!profile.onboarding_complete) {
-            if (typeof window !== "undefined") {
-              window.sessionStorage.setItem(AUTH_POST_TARGET_KEY, "/setup");
-            }
-            router.replace("/setup");
-            return;
-          }
-        } catch {
-          /* if profile fetch fails, go to dashboard */
+        const { data: signedIn, error: followUpSignInError } =
+          await signInWithPassword();
+        if (signedIn.session) {
+          continueWithSession("signup");
+          return;
         }
+
+        if (mountedRef.current) {
+          setMode("signin");
+          setError(
+            followUpSignInError && isUnconfirmedEmailError(followUpSignInError.message)
+              ? "Account created. Confirm your email from the link we sent, then sign in."
+              : "Account created. Please sign in with the same email and password."
+          );
+          setIsSubmitting(false);
+        }
+        submittingRef.current = false;
         return;
       }
+
+      const { data: signedIn, error: signInError } = await signInWithPassword();
+      if (signInError) {
+        if (isUnconfirmedEmailError(signInError.message)) {
+          throw new Error(
+            "Please confirm your email from the link we sent, then sign in."
+          );
+        }
+        if (isInvalidCredentialsError(signInError.message)) {
+          throw new Error("Incorrect email or password. Try again, or use Forgot password.");
+        }
+        throw signInError;
+      }
+      if (!signedIn.session) {
+        throw new Error("Sign in did not complete. Please try again.");
+      }
+      continueWithSession("signin");
     } catch (err: unknown) {
       const message = errorMessage(err, "Something went wrong. Please try again.");
       if (mountedRef.current) {
         setError(message);
       }
     } finally {
+      submittingRef.current = false;
       if (mountedRef.current) {
         setIsSubmitting(false);
       }
@@ -379,6 +440,7 @@ export default function AuthPage() {
               autoComplete="email"
               placeholder="Enter your email"
               status={validation.status("email")}
+              showValidState={false}
               errorMessage={validation.error("email")}
               ref={validation.register("email")}
               value={formData.email}
@@ -396,6 +458,7 @@ export default function AuthPage() {
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               placeholder="Enter your password"
               status={validation.status("password")}
+              showValidState={false}
               errorMessage={validation.error("password")}
               ref={validation.register("password")}
               value={formData.password}

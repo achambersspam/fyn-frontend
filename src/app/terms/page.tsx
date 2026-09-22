@@ -48,10 +48,10 @@ export default function TermsPage() {
           </p>
           <ul className="mt-3 list-disc pl-5 text-sm leading-7 text-slate-600 dark:text-slate-300 space-y-1">
             <li><strong>Free</strong> — limited access at no charge.</li>
-            <li><strong>Plus</strong> — $4.99 billed every 4 weeks.</li>
-            <li><strong>Premium</strong> — $9.99 billed every 4 weeks. Eligible accounts
-              receive a 7-day free trial the first time they start Premium. Plus does not
-              include a trial.</li>
+            <li><strong>Plus</strong> — $4.99 billed every 4 weeks. Eligible accounts
+              receive a 7-day free trial the first time they start Plus or Premium.
+              One trial per account.</li>
+            <li><strong>Premium</strong> — $9.99 billed every 4 weeks.</li>
           </ul>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Paid plans are billed automatically on a recurring 4-week cycle. By subscribing,
@@ -69,8 +69,9 @@ export default function TermsPage() {
             .
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            If you start a Premium trial, we will charge $9.99 at the end of the 7 days unless
-            you cancel first. We email a reminder 48–72 hours before that charge. Cancellation
+            If you start a Plus trial, we will charge $4.99 at the end of the 7 days unless
+            you cancel first. A first-time Premium trial charges $9.99 the same way. We email
+            a reminder 48–72 hours before that charge. Cancellation
             is <strong>cancel-at-period-end</strong>: you keep paid access until the current
             period (or trial) ends, and we do not issue prorated refunds for unused time.
             You can cancel in Settings (first-party) or through Stripe&apos;s customer portal;
