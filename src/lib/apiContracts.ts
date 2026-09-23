@@ -61,6 +61,9 @@ export type Newsletter = {
   next_send_at_utc?: string;
   created_at?: string;
   updated_at?: string;
+  edits_used_this_week?: number;
+  edits_remaining_this_week?: number;
+  edits_week_limit?: number;
 };
 
 export type NewsletterCreatePayload = {

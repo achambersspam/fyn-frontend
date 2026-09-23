@@ -46,6 +46,8 @@ export default function PigeonTopicPriorityPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [editsRemaining, setEditsRemaining] = useState<number | null>(null);
+  const [editsLimit, setEditsLimit] = useState(4);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -97,6 +99,14 @@ export default function PigeonTopicPriorityPage() {
         if (cancelled) return;
         setSelectedNewsletter(newsletter);
         setPriorityRows(buildPriorityRows(newsletter));
+        setEditsRemaining(
+          typeof newsletter.edits_remaining_this_week === "number"
+            ? newsletter.edits_remaining_this_week
+            : null
+        );
+        setEditsLimit(
+          typeof newsletter.edits_week_limit === "number" ? newsletter.edits_week_limit : 4
+        );
       } catch (err) {
         if (cancelled) return;
         const apiErr = err as ApiError;
@@ -173,7 +183,17 @@ export default function PigeonTopicPriorityPage() {
         monthly_day_of_month: selectedNewsletter.monthly_day_of_month,
         read_time_minutes: selectedNewsletter.read_time_minutes,
       };
-      await api.put(`/api/newsletters/${selectedNewsletter.id}`, payload);
+      const saved = await api.put<Newsletter>(`/api/newsletters/${selectedNewsletter.id}`, payload);
+      if (saved) {
+        setEditsRemaining(
+          typeof saved.edits_remaining_this_week === "number"
+            ? saved.edits_remaining_this_week
+            : Math.max(0, (editsRemaining ?? 4) - 1)
+        );
+        if (typeof saved.edits_week_limit === "number") {
+          setEditsLimit(saved.edits_week_limit);
+        }
+      }
     } catch (err) {
       const message = errorMessage(err, "Failed to save priorities.");
       setError(message);
@@ -246,6 +266,19 @@ export default function PigeonTopicPriorityPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               More pigeons allocate more time to that topic in the newsletter.
             </p>
+            {editsRemaining !== null && (
+              <p
+                className={`text-sm font-semibold ${
+                  editsRemaining === 0
+                    ? "text-red-600 dark:text-red-300"
+                    : "text-sky-700 dark:text-sky-300"
+                }`}
+              >
+                {editsRemaining === 0
+                  ? `Weekly edit limit reached (${editsLimit} saves / 7 days).`
+                  : `${editsRemaining} of ${editsLimit} edits left this week.`}
+              </p>
+            )}
             {priorityRows.map((row) => (
               <div
                 key={row.key}
@@ -269,7 +302,7 @@ export default function PigeonTopicPriorityPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || editsRemaining === 0}
               className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {isSaving ? "Saving..." : "Save Topic Priorities"}

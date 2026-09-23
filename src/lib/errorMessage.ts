@@ -58,6 +58,12 @@ export function errorMessage(err: unknown, fallback = GENERIC): string {
   if (code === "TIER_LIMIT") {
     return TIER_LIMIT;
   }
+  if (code === "NEWSLETTER_EDIT_LIMIT") {
+    return (
+      raw ||
+      "You can edit this newsletter 4 times every 7 days. Try again when a save slot opens."
+    );
+  }
   if (code === "VALIDATION_ERROR") {
     const details = parsed.details;
     const lines = Array.isArray(details)

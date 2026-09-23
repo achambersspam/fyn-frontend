@@ -107,6 +107,9 @@ export default function EditNewsletterPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
+  const [editsRemaining, setEditsRemaining] = useState<number | null>(null);
+  const [editsUsed, setEditsUsed] = useState<number | null>(null);
+  const [editsLimit, setEditsLimit] = useState(4);
 
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
   const totalSeconds = readTimeMin * 60;
@@ -247,6 +250,11 @@ export default function EditNewsletterPage() {
         setEmail(nl.email ?? "");
         setNextSend(nl.next_send_at_utc ?? null);
         setIsDisabled(Boolean(nl.disabled));
+        setEditsRemaining(
+          typeof nl.edits_remaining_this_week === "number" ? nl.edits_remaining_this_week : null
+        );
+        setEditsUsed(typeof nl.edits_used_this_week === "number" ? nl.edits_used_this_week : null);
+        setEditsLimit(typeof nl.edits_week_limit === "number" ? nl.edits_week_limit : 4);
 
         const snap = JSON.stringify({
           selectedTopics: topics,
@@ -386,7 +394,22 @@ export default function EditNewsletterPage() {
     const saveEndpoint = `/api/newsletters/${id}`;
 
     try {
-      await api.put(saveEndpoint, payload);
+      const saved = await api.put<Newsletter>(saveEndpoint, payload);
+      if (saved) {
+        setEditsRemaining(
+          typeof saved.edits_remaining_this_week === "number"
+            ? saved.edits_remaining_this_week
+            : Math.max(0, (editsRemaining ?? 4) - 1)
+        );
+        setEditsUsed(
+          typeof saved.edits_used_this_week === "number"
+            ? saved.edits_used_this_week
+            : (editsUsed ?? 0) + 1
+        );
+        if (typeof saved.edits_week_limit === "number") {
+          setEditsLimit(saved.edits_week_limit);
+        }
+      }
       const saveDurationMs = Math.max(0, Math.round(performance.now() - saveStartedAt));
       if (process.env.NODE_ENV !== "production") {
         console.log("UI_ACTION_TIMING", {
@@ -470,6 +493,8 @@ export default function EditNewsletterPage() {
     totalSeconds,
     isInvalidDetailsApiError,
     toast,
+    editsRemaining,
+    editsUsed,
   ]);
 
   const promptLeaveForInvalidDetails = useCallback((nextNav: () => void) => {
@@ -522,7 +547,8 @@ export default function EditNewsletterPage() {
     timezone.length > 0 &&
     allocationValid &&
     !isSaving &&
-    !isDeleting;
+    !isDeleting &&
+    editsRemaining !== 0;
   const requiresWeekday = frequency === "Weekly" || frequency === "Bi-Weekly";
   const requiresMonthlyDay = frequency === "Monthly";
   const tierDisallowsWeekend = tier !== "premium";
@@ -607,6 +633,22 @@ export default function EditNewsletterPage() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
             Your next newsletter is scheduled within 30 minutes. Changes may
             apply to the following delivery cycle.
+          </div>
+        )}
+
+        {editsRemaining !== null && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+              editsRemaining === 0
+                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300"
+                : "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200"
+            }`}
+          >
+            {editsRemaining === 0
+              ? `You've used all ${editsLimit} edits for this newsletter this week. You can save again in a few days.`
+              : `${editsRemaining} of ${editsLimit} edits left this week${
+                  typeof editsUsed === "number" ? ` (${editsUsed} used)` : ""
+                }.`}
           </div>
         )}
 
@@ -879,7 +921,11 @@ export default function EditNewsletterPage() {
             disabled={!canSave}
             className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving
+              ? "Saving..."
+              : editsRemaining === 0
+                ? "Weekly edit limit reached"
+                : "Save Changes"}
           </button>
         </Tooltip>
         <Tooltip
