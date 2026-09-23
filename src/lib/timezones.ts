@@ -10,7 +10,7 @@ export const TIMEZONE_OPTIONS: TimezoneOption[] = [
   { label: "CST - Central Standard Time", value: "CST", iana: "America/Chicago" },
   { label: "MST - Mountain Standard Time", value: "MST", iana: "America/Denver" },
   { label: "PST - Pacific Standard Time", value: "PST", iana: "America/Los_Angeles" },
-  { label: "KST - Alaska Standard Time", value: "KST", iana: "America/Anchorage" },
+  { label: "AKST - Alaska Standard Time", value: "KST", iana: "America/Anchorage" },
   { label: "HAST - Hawaii-Aleutian Standard Time", value: "HAST", iana: "Pacific/Honolulu" },
 ];
 

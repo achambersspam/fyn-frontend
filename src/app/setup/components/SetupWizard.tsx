@@ -827,7 +827,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
             className="h-56 w-auto object-contain"
           />
         </div>
-        <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
+        <section className="scroll-mt-24 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-slate-900/50 p-6 space-y-4">
           <h2 className="text-lg font-black text-gray-900 dark:text-gray-100">
             Topic Details
           </h2>
@@ -837,7 +837,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           {selectedTopics.map((topic) => (
             <div
               key={topic}
-              className="rounded-2xl border border-gray-200 p-4 space-y-3 dark:border-slate-800 dark:bg-slate-900/50"
+              className="scroll-mt-28 relative z-0 rounded-2xl border border-gray-200 p-4 space-y-3 dark:border-slate-800 dark:bg-slate-900/50"
             >
               <h3 className="font-bold text-gray-900 dark:text-gray-100">{topic}</h3>
               <div>
@@ -1028,7 +1028,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         </div>
       </div>
 
-      <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-8">
+      <div className="max-w-[820px] w-full mx-auto scroll-pt-28 px-4 sm:px-6 lg:px-10 py-8 space-y-8">
         <div className="flex justify-center mb-8">
           <img
             src="/logo-pigeon-newsletter-header.svg"

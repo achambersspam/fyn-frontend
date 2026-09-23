@@ -229,6 +229,15 @@ export default function AuthPage() {
     const signInWithPassword = async () =>
       supabase.auth.signInWithPassword({ email, password });
 
+    const signInWithRetries = async (attempts = 3) => {
+      let last = await signInWithPassword();
+      for (let i = 1; i < attempts && !last.data.session; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 350 * i));
+        last = await signInWithPassword();
+      }
+      return last;
+    };
+
     try {
       if (mode === "signup") {
         void trackEvent("signup_started", { auth_method: "email_password" });
@@ -286,7 +295,7 @@ export default function AuthPage() {
         }
 
         const { data: signedIn, error: followUpSignInError } =
-          await signInWithPassword();
+          await signInWithRetries();
         if (signedIn.session) {
           continueWithSession("signup");
           return;

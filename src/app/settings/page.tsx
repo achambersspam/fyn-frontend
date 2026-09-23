@@ -496,6 +496,37 @@ function SettingsPage() {
           ) : null}
         </div>
 
+        <div className="bg-white rounded-3xl border border-gray-200 dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+            <h2 className="text-sm font-black text-gray-900 dark:text-gray-100">
+              Account Management
+            </h2>
+          </div>
+          <div className="p-5">
+            <div className="rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/40 dark:bg-red-950/10">
+              <h3 className="text-sm font-bold text-red-700 dark:text-red-300">
+                Delete account permanently (also cancels billing)
+              </h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-red-600/90 dark:text-red-400/90">
+                Permanently delete your account, all newsletters, and your data. Any Stripe
+                subscription is cancelled immediately. This cannot be undone.
+              </p>
+              <Tooltip label="Permanently delete your account and all data">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirmText("");
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="mt-3 rounded-lg border border-red-300 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+                >
+                  Delete my account
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-3xl border border-gray-200 dark:bg-slate-900 dark:border-slate-800 divide-y divide-gray-100 dark:divide-slate-800">
           {menuItems.map(({ label, href, icon: Icon }) => (
             <Link
@@ -565,29 +596,6 @@ function SettingsPage() {
             {isSigningOut ? "Signing Out..." : "Sign Out"}
           </button>
         </Tooltip>
-
-        {/* Danger zone: permanent account deletion */}
-        <div className="rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/40 dark:bg-red-950/10">
-          <h3 className="text-sm font-bold text-red-700 dark:text-red-300">
-            Delete account permanently (also cancels billing)
-          </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-red-600/90 dark:text-red-400/90">
-            Permanently delete your account, all newsletters, and your data. Any Stripe
-            subscription is cancelled immediately. This cannot be undone.
-          </p>
-          <Tooltip label="Permanently delete your account and all data">
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteConfirmText("");
-                setShowDeleteConfirm(true);
-              }}
-              className="mt-3 rounded-lg border border-red-300 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
-            >
-              Delete my account
-            </button>
-          </Tooltip>
-        </div>
 
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

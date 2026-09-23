@@ -90,8 +90,11 @@ export default function NewsletterPage() {
   const atLimit =
     limits.maxNewsletters !== Infinity &&
     newsletters.length >= limits.maxNewsletters;
-  const createButtonLabel =
-    newsletters.length > 0 ? "Create Another Newsletter" : "Create Newsletter";
+  const createButtonLabel = atLimit
+    ? "Upgrade to add another newsletter"
+    : newsletters.length > 0
+      ? "Create Another Newsletter"
+      : "Create Newsletter";
 
   const handleCreateNewsletter = () => {
     if (atLimit) {
@@ -186,7 +189,11 @@ export default function NewsletterPage() {
         ))}
         {!isLoading && !error && (
           <Tooltip
-            label="Create another newsletter (plan limits apply)"
+            label={
+              atLimit
+                ? "Your plan is at its newsletter limit"
+                : "Create another newsletter (plan limits apply)"
+            }
             className="w-full"
           >
             <button
