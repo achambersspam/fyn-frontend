@@ -13,6 +13,8 @@ const PUBLIC_PATHS = [
   "/terms",
   "/start",
   "/offline",
+  "/opengraph-image",
+  "/twitter-image",
 ];
 
 export async function middleware(request: NextRequest) {

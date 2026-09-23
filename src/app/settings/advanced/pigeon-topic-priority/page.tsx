@@ -224,7 +224,9 @@ export default function PigeonTopicPriorityPage() {
             className="input-field"
             disabled={isLoading || newsletters.length === 0}
           >
-            {newsletters.length === 0 ? (
+            {isLoading && newsletters.length === 0 ? (
+              <option value="">Loading newsletters…</option>
+            ) : newsletters.length === 0 ? (
               <option value="">No newsletters found</option>
             ) : (
               newsletters.map((newsletter) => (
