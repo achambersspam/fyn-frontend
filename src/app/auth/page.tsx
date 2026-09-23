@@ -201,7 +201,17 @@ export default function AuthPage() {
     const email = formData.email.trim();
     const password = formData.password;
 
-    const continueWithSession = (kind: "signup" | "signin") => {
+    const waitForSession = async (maxMs = 5000) => {
+      const started = Date.now();
+      while (Date.now() - started < maxMs) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) return data.session;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      return null;
+    };
+
+    const continueWithSession = async (kind: "signup" | "signin") => {
       void trackEvent(kind === "signup" ? "signup_completed" : "login_completed", {
         auth_method: "email_password",
       });
@@ -220,10 +230,22 @@ export default function AuthPage() {
         } catch {
           /* profile may already exist */
         }
-        router.replace("/setup");
+      }
+      const session = await waitForSession();
+      const target = kind === "signup" ? "/setup" : "/dashboard";
+      if (!session) {
+        if (mountedRef.current) {
+          setError(
+            kind === "signup"
+              ? "Account created. Please sign in with the same email and password."
+              : "Sign in did not complete. Please try again."
+          );
+          setIsSubmitting(false);
+        }
+        submittingRef.current = false;
         return;
       }
-      router.replace("/dashboard");
+      window.location.assign(target);
     };
 
     const signInWithPassword = async () =>
@@ -249,7 +271,7 @@ export default function AuthPage() {
         const tryExistingAccountSignIn = async (fallbackMessage: string) => {
           const { data: signedIn, error: signInError } = await signInWithPassword();
           if (signedIn.session) {
-            continueWithSession("signin");
+            await continueWithSession("signin");
             return;
           }
           if (mountedRef.current) {
@@ -281,7 +303,7 @@ export default function AuthPage() {
         }
 
         if (data.session) {
-          continueWithSession("signup");
+          await continueWithSession("signup");
           return;
         }
 
@@ -297,7 +319,7 @@ export default function AuthPage() {
         const { data: signedIn, error: followUpSignInError } =
           await signInWithRetries();
         if (signedIn.session) {
-          continueWithSession("signup");
+          await continueWithSession("signup");
           return;
         }
 
@@ -329,7 +351,7 @@ export default function AuthPage() {
       if (!signedIn.session) {
         throw new Error("Sign in did not complete. Please try again.");
       }
-      continueWithSession("signin");
+      await continueWithSession("signin");
     } catch (err: unknown) {
       const message = errorMessage(err, "Something went wrong. Please try again.");
       if (mountedRef.current) {
