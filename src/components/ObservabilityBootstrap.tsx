@@ -39,7 +39,10 @@ export default function ObservabilityBootstrap() {
           capture_pageview: true,
           capture_pageleave: true,
           disable_session_recording: false,
-          autocapture: true,
+          // Privacy: recordings must never capture what users type (emails, passwords,
+          // newsletter details) or copied text.
+          session_recording: { maskAllInputs: true, maskTextSelector: "[data-ph-mask]" },
+          autocapture: { capture_copied_text: false },
         });
         window.addEventListener("error", () => {
           posthog.capture("app_error_seen", {

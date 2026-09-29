@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { isStripeUrl } from "@/lib/safeRedirect";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
@@ -250,7 +251,7 @@ function SettingsPage() {
     setIsOpeningPortal(true);
     try {
       const res = await api.post<CheckoutResponse>("/api/stripe/portal", {});
-      if (res.url) {
+      if (isStripeUrl(res.url)) {
         window.location.href = res.url;
         return;
       }

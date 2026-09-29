@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isStripeUrl } from "@/lib/safeRedirect";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
@@ -159,7 +160,7 @@ export default function SubscriptionPage() {
       const res = await api.post<CheckoutResponse>("/api/stripe/checkout", {
         plan: planId === "plus" ? "plus" : "premium",
       });
-      if (res.url) {
+      if (isStripeUrl(res.url)) {
         window.location.href = res.url;
         return;
       }
@@ -189,7 +190,7 @@ export default function SubscriptionPage() {
     setError(null);
     try {
       const res = await api.post<CheckoutResponse>("/api/stripe/portal", {});
-      if (res.url) {
+      if (isStripeUrl(res.url)) {
         window.location.href = res.url;
         return;
       }

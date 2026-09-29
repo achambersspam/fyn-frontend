@@ -10,6 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { errorMessage } from "@/lib/errorMessage";
 import { cacheLastReadIssue } from "@/lib/lastIssueCache";
 import Spinner from "@/components/Spinner";
+import { sanitizeIssueHtml } from "@/lib/sanitizeIssueHtml";
 
 export default function ReadNewsletterPage() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function ReadNewsletterPage() {
           !error &&
           issue &&
           (issue.body_html?.trim() ? (
-            <div dangerouslySetInnerHTML={{ __html: issue.body_html }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeIssueHtml(issue.body_html) }} />
           ) : (
             <article className="bg-white rounded-3xl border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-800 space-y-4">
               {issue.subject && (
