@@ -266,6 +266,8 @@ export default function AuthPage() {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          // Confirmation links (when "Confirm email" is on) return to this site.
+          options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
 
         const tryExistingAccountSignIn = async (fallbackMessage: string) => {
