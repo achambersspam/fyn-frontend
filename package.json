@@ -22,13 +22,13 @@
     "dompurify": "^3.4.16",
     "next": "^16.3.7",
     "posthog-js": "^1.369.3",
-    "react": "^18.2.0",
+    "react": "^19.3.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^20",
-    "@types/react": "^18",
+    "@types/react": "^19",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "dotenv": "^17.4.2",
