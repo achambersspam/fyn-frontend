@@ -8,6 +8,7 @@ import { trackEvent } from "@/lib/analytics";
 import { TOPIC_OPTIONS } from "@/lib/topics/topicConfig";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
+import { newsletterName, orderNewsletters } from "@/lib/newsletterNames";
 import { useToast } from "@/lib/useToast";
 
 type InstantStatus = {
@@ -34,9 +35,12 @@ const MAX_CUSTOM_TOPICS = 3;
 // enforces the tier + monthly quota regardless of anything the client shows.
 export default function GenerateNowCard({
   newsletters,
+  allNewsletters,
   profile,
 }: {
   newsletters: Newsletter[];
+  // Full list (including disabled) so numbers match the rest of the app.
+  allNewsletters?: Newsletter[];
   profile: Profile | null;
 }) {
   const router = useRouter();
@@ -55,6 +59,8 @@ export default function GenerateNowCard({
   // server-side, while a fresh modal open is a genuinely new request.
   const [clientKey, setClientKey] = useState("");
 
+  const numberingList = allNewsletters ?? newsletters;
+  const orderedNewsletters = orderNewsletters(newsletters);
   const isPaid = profile?.tier === "minimum" || profile?.tier === "premium";
 
   useEffect(() => {
@@ -222,7 +228,7 @@ export default function GenerateNowCard({
                 )}
                 <button
                   onClick={() => {
-                    setSelectedNewsletterId(newsletters[0]?.id || "");
+                    setSelectedNewsletterId(orderedNewsletters[0]?.id || "");
                     setStep("preset");
                   }}
                   className="w-full rounded-2xl border border-gray-200 p-4 text-left transition hover:border-primary/50 hover:bg-primary/5 dark:border-slate-700"
@@ -251,7 +257,7 @@ export default function GenerateNowCard({
                   Which newsletter?
                 </h3>
                 <div className="space-y-2">
-                  {newsletters.map((nl) => (
+                  {orderedNewsletters.map((nl) => (
                     <label
                       key={nl.id}
                       className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-slate-700"
@@ -263,7 +269,7 @@ export default function GenerateNowCard({
                         onChange={() => setSelectedNewsletterId(nl.id)}
                       />
                       <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {nl.title || "Newsletter"}
+                        {newsletterName(nl.id, numberingList)}
                       </span>
                     </label>
                   ))}

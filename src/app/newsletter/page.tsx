@@ -12,6 +12,12 @@ import { getCurrentSession } from "@/lib/supabase";
 import type { Newsletter, Profile } from "@/lib/apiContracts";
 import { TIER_LIMITS } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
+import {
+  checkRenumbering,
+  newsletterName,
+  orderNewsletters,
+  type Renumbering,
+} from "@/lib/newsletterNames";
 import { useDelayedVisibility } from "@/lib/useDelayedVisibility";
 import { useToast } from "@/lib/useToast";
 import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
@@ -24,6 +30,7 @@ export default function NewsletterPage() {
   const [error, setError] = useState<string | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showChooseActive, setShowChooseActive] = useState(false);
+  const [renumbered, setRenumbered] = useState<Renumbering>([]);
   const [isNavigatingCreate, setIsNavigatingCreate] = useState(false);
   const showSkeleton = useDelayedVisibility(isLoading, 200);
   const { toast } = useToast();
@@ -48,8 +55,12 @@ export default function NewsletterPage() {
           }),
         ]);
         if (cancelled) return;
-        setNewsletters(Array.isArray(nls) ? nls : []);
+        const list = Array.isArray(nls) ? nls : [];
+        setNewsletters(list);
         setProfile(prof);
+        // Records the new numbering, so each shift is only ever announced once.
+        const shifts = checkRenumbering(session.user.id, list);
+        if (shifts.length > 0) setRenumbered(shifts);
       } catch (err) {
         if (cancelled) return;
         const status =
@@ -156,7 +167,7 @@ export default function NewsletterPage() {
           </div>
         )}
 
-        {!isLoading && newsletters.map((nl) => (
+        {!isLoading && orderNewsletters(newsletters).map((nl) => (
           <Link
             key={nl.id}
             href={`/newsletter/${nl.id}`}
@@ -172,7 +183,7 @@ export default function NewsletterPage() {
             <div className={`flex items-center justify-between ${nl.disabled ? "blur-[1px]" : ""}`}>
               <div className="space-y-1">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100">
-                  {nl.title || nl.email}
+                  {newsletterName(nl.id, newsletters)}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {nl.topics.length} topic{nl.topics.length !== 1 ? "s" : ""} ·{" "}
@@ -240,6 +251,38 @@ export default function NewsletterPage() {
                 Go back to home page
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {renumbered.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 space-y-4"
+          >
+            <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">
+              Your newsletters were renumbered
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Because a newsletter was deleted, the ones after it moved up so the
+              numbers stay in order. Your topics and settings didn&apos;t change.
+            </p>
+            <ul className="space-y-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {renumbered.map((r) => (
+                <li key={`${r.from}-${r.to}`}>
+                  Newsletter {r.from} is now Newsletter {r.to}
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setRenumbered([])}
+              className="w-full btn-primary"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}

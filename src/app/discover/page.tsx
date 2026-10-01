@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
-import { BookOpen, Globe, Heart, TrendingUp, Zap } from "@/components/Icons";
+import { BookOpen, Globe, Heart, TrendingUp, X, Zap } from "@/components/Icons";
+import Tooltip from "@/components/Tooltip";
 import { api } from "@/lib/api";
-import type { TrendingTopic, ExploreTopic } from "@/lib/apiContracts";
+import type {
+  TrendingTopic,
+  ExploreTopic,
+  Newsletter,
+  Profile,
+  Tier,
+} from "@/lib/apiContracts";
+import { TIER_LIMITS } from "@/lib/apiContracts";
 
 type CardIcon = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -68,19 +76,20 @@ function TrendingCard({
   description,
   tag,
   category,
-  href,
+  onOpen,
 }: {
   icon: CardIcon;
   title: string;
   description: string;
   tag: string;
   category: string;
-  href?: string;
+  onOpen: () => void;
 }) {
   return (
-    <Link
-      href={href || "/setup"}
-      className="snap-center shrink-0 w-72 bg-white rounded-3xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 hover:-translate-y-1 transition-all dark:bg-slate-900 dark:border-slate-800"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="snap-center shrink-0 w-72 text-left bg-white rounded-3xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 hover:-translate-y-1 transition-all dark:bg-slate-900 dark:border-slate-800"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="w-11 h-11 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -99,7 +108,7 @@ function TrendingCard({
       <span className="text-xs text-gray-500 font-bold dark:text-gray-400">
         {category}
       </span>
-    </Link>
+    </button>
   );
 }
 
@@ -107,17 +116,18 @@ function ExploreCard({
   icon: Icon,
   title,
   description,
-  href,
+  onOpen,
 }: {
   icon: CardIcon;
   title: string;
   description: string;
-  href?: string;
+  onOpen: () => void;
 }) {
   return (
-    <Link
-      href={href || "/setup"}
-      className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block w-full text-left bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-lg hover:border-primary/50 transition-all dark:bg-slate-900 dark:border-slate-800"
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
@@ -132,11 +142,15 @@ function ExploreCard({
           </p>
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
 
 export default function DiscoverPage() {
+  const router = useRouter();
+  const [tier, setTier] = useState<Tier>("basic");
+  const [newsletterCount, setNewsletterCount] = useState(0);
+  const [blockedTopic, setBlockedTopic] = useState<string | null>(null);
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [exploreNew, setExploreNew] = useState<ExploreTopic[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +176,38 @@ export default function DiscoverPage() {
         setExploreNew(fallbackExplore);
       });
   }, []);
+
+  useEffect(() => {
+    Promise.all([api.get<Profile>("/api/me"), api.get<Newsletter[]>("/api/newsletters")])
+      .then(([profile, list]) => {
+        setTier(profile?.tier ?? "basic");
+        setNewsletterCount(Array.isArray(list) ? list.length : 0);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (blockedTopic === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setBlockedTopic(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [blockedTopic]);
+
+  const maxNewsletters = (TIER_LIMITS[tier] ?? TIER_LIMITS.basic).maxNewsletters;
+  // A new topic means a new newsletter; stop at the plan limit here instead of at the end of setup.
+  const openTopic = (title: string, href?: string) => {
+    if (newsletterCount >= maxNewsletters) setBlockedTopic(title);
+    else router.push(href || "/setup");
+  };
+  // Anything that is not Plus or Premium is treated as Free (new profiles can report "free").
+  const nextPlan =
+    tier === "premium"
+      ? null
+      : tier === "minimum"
+        ? { name: "Premium", count: 5 }
+        : { name: "Plus", count: 2 };
 
   const displayTrending =
     trendingTopics.length > 0 ? trendingTopics : fallbackTrending;
@@ -194,7 +240,7 @@ export default function DiscoverPage() {
                 description={topic.description}
                 tag={topic.tag}
                 category={topic.category}
-                href={topic.href}
+                onOpen={() => openTopic(topic.title, topic.href)}
                 icon={Zap}
               />
             ))}
@@ -218,7 +264,7 @@ export default function DiscoverPage() {
                 key={item.title}
                 title={item.title}
                 description={item.description}
-                href={item.href}
+                onOpen={() => openTopic(item.title, item.href)}
                 icon={BookOpen}
               />
             ))}
@@ -231,6 +277,86 @@ export default function DiscoverPage() {
           </p>
         )}
       </div>
+
+      {blockedTopic !== null && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-5 backdrop-blur-md"
+          onClick={() => setBlockedTopic(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discover-upgrade-title"
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[420px] rounded-3xl border border-gray-200 bg-white px-6 pb-6 pt-7 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div className="absolute right-3.5 top-3.5">
+              <Tooltip label="Close">
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setBlockedTopic(null)}
+                  className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                >
+                  <X size={16} />
+                </button>
+              </Tooltip>
+            </div>
+            <div className="flex flex-col items-center gap-3 pt-1 text-center">
+              <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-primary/10">
+                <Zap size={26} className="text-primary" />
+              </div>
+              <h2
+                id="discover-upgrade-title"
+                className="text-xl font-black text-gray-900 dark:text-gray-100"
+              >
+                Add {blockedTopic} to a new newsletter
+              </h2>
+              <p className="text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
+                {nextPlan
+                  ? `Your current plan includes ${maxNewsletters} newsletter${
+                      maxNewsletters === 1 ? "" : "s"
+                    }, and you're already using ${
+                      maxNewsletters === 1 ? "it" : "all of them"
+                    }. To create a brand-new newsletter with ${blockedTopic}, upgrade to ${
+                      nextPlan.name
+                    } to get access to ${nextPlan.count} newsletters.`
+                  : `You're using all ${maxNewsletters} newsletters included in Premium. To add ${blockedTopic}, edit one of your existing newsletters from the Newsletter tab.`}
+              </p>
+            </div>
+            <div className="mt-5 space-y-2.5">
+              {nextPlan ? (
+                <Tooltip label="See plans and upgrade" className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/subscription")}
+                    className="w-full btn-primary"
+                  >
+                    Upgrade Subscription
+                  </button>
+                </Tooltip>
+              ) : (
+                <Tooltip label="Open your newsletters to edit one" className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/newsletter")}
+                    className="w-full btn-primary"
+                  >
+                    Go to My Newsletters
+                  </button>
+                </Tooltip>
+              )}
+              <button
+                type="button"
+                onClick={() => setBlockedTopic(null)}
+                className="w-full btn-outline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

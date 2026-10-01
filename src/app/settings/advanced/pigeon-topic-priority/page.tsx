@@ -11,6 +11,7 @@ import type { Newsletter, NewsletterUpdatePayload } from "@/lib/apiContracts";
 import { allocateByPriority, inferPriorityFromSeconds } from "@/lib/allocateByPriority";
 import TopicPrioritySelector from "@/components/TopicPrioritySelector";
 import { ChevronLeft } from "@/components/Icons";
+import { newsletterName, orderNewsletters } from "@/lib/newsletterNames";
 
 type PriorityTopicRow = {
   key: string;
@@ -249,9 +250,9 @@ export default function PigeonTopicPriorityPage() {
             ) : newsletters.length === 0 ? (
               <option value="">No newsletters found</option>
             ) : (
-              newsletters.map((newsletter) => (
+              orderNewsletters(newsletters).map((newsletter) => (
                 <option key={newsletter.id} value={newsletter.id}>
-                  {newsletter.title || "Newsletter"}
+                  {newsletterName(newsletter.id, newsletters)}
                 </option>
               ))
             )}

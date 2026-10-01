@@ -8,7 +8,7 @@ import GenerateNowCard from "@/components/GenerateNowCard";
 import Tooltip from "@/components/Tooltip";
 import Spinner from "@/components/Spinner";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
-import { Trophy, Clock, Pause, Play } from "@/components/Icons";
+import { Trophy } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { errorMessage } from "@/lib/errorMessage";
@@ -26,6 +26,7 @@ import type {
 } from "@/lib/apiContracts";
 import { TIER_LIMITS } from "@/lib/apiContracts";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { newsletterName, orderNewsletters, seedNumbering } from "@/lib/newsletterNames";
 import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
 
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -90,7 +91,6 @@ function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [togglingPause, setTogglingPause] = useState<string | null>(null);
   const [isResubscribing, setIsResubscribing] = useState(false);
   const [showChooseActive, setShowChooseActive] = useState(false);
   const showFirstIssueLimitNotice = searchParams.get("firstIssueLimitHit") === "1";
@@ -134,6 +134,7 @@ function DashboardPage() {
         .then(async ([nls, ach, prof]) => {
           const safeNewsletters = Array.isArray(nls) ? nls : [];
           setNewsletters(safeNewsletters);
+          seedNumbering(session.user.id, safeNewsletters);
           setAchievements(ach);
           setProfile(prof);
           if (safeNewsletters.length === 0) {
@@ -183,6 +184,7 @@ function DashboardPage() {
     void router.prefetch("/settings");
     void router.prefetch("/newsletter");
     void router.prefetch("/settings/feedback");
+    void router.prefetch("/settings/pause-delivery");
     void router.prefetch("/achievements");
   }, [router]);
 
@@ -200,34 +202,6 @@ function DashboardPage() {
       });
     }
   }, [isLoading, newsletters.length]);
-
-  const togglePause = async (nl: Newsletter) => {
-    if (nl.disabled && nl.paused) {
-      setShowChooseActive(true);
-      return;
-    }
-    setTogglingPause(nl.id);
-    const previousPaused = nl.paused;
-    setNewsletters((prev) =>
-      prev.map((n) => (n.id === nl.id ? { ...n, paused: !previousPaused } : n))
-    );
-    try {
-      await api.patch(`/api/newsletters/${nl.id}/pause`);
-    } catch (err) {
-      setNewsletters((prev) =>
-        prev.map((n) => (n.id === nl.id ? { ...n, paused: previousPaused } : n))
-      );
-      const apiErr = err as ApiError;
-      if (apiErr?.code === "NEWSLETTER_ACTIVE_CAP") {
-        setShowChooseActive(true);
-        setError(errorMessage(apiErr));
-      } else {
-        setError("Couldn't update your newsletter. Please try again.");
-      }
-    } finally {
-      setTogglingPause(null);
-    }
-  };
 
   const handleResubscribe = async () => {
     setIsResubscribing(true);
@@ -314,14 +288,18 @@ function DashboardPage() {
               </div>
             )}
             {primary.paused && !primary.disabled && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+              <Link
+                href="/settings/pause-delivery"
+                className="block rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+              >
                 Your newsletter is currently paused. Resume to continue
-                receiving deliveries.
-              </div>
+                receiving deliveries.{" "}
+                <span className="underline">Resume in Settings</span>
+              </Link>
             )}
 
             <div className="space-y-4">
-              {newsletters.map((nl) => {
+              {orderNewsletters(newsletters).map((nl) => {
                 const latest = latestIssueByNewsletter[nl.id] || null;
                 const isGenerating = latest?.generation_status === "queued";
                 const isFailed = latest?.generation_status === "failed";
@@ -345,7 +323,7 @@ function DashboardPage() {
                     ) : null}
                     <div className="flex items-center justify-between gap-3">
                       <p className="min-w-0 flex-1 text-base font-bold text-gray-900 truncate dark:text-gray-100">
-                        {nl.title || "Newsletter"}
+                        {newsletterName(nl.id, newsletters)}
                       </p>
                       <Link
                         href={`/newsletter/${nl.id}`}
@@ -411,69 +389,9 @@ function DashboardPage() {
 
             <GenerateNowCard
               newsletters={newsletters.filter((nl) => !nl.disabled)}
+              allNewsletters={newsletters}
               profile={profile}
             />
-
-            {/* Next Send / Pause */}
-            <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Clock size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                      Next Delivery
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {primary.paused
-                        ? primary.disabled
-                          ? "Disabled on this plan"
-                          : "Paused"
-                        : primary.next_send_at_utc
-                          ? new Date(primary.next_send_at_utc).toLocaleString()
-                          : "Calculating..."}
-                    </p>
-                  </div>
-                </div>
-
-                <Tooltip
-                  label={
-                    primary.disabled
-                      ? "This newsletter is Disabled on your current plan"
-                      : primary.paused
-                      ? "Resume scheduled delivery of this newsletter"
-                      : "Pause delivery — no new issues until you resume"
-                  }
-                >
-                  <button
-                    onClick={() =>
-                      primary.disabled
-                        ? setShowChooseActive(true)
-                        : void togglePause(primary)
-                    }
-                    disabled={togglingPause === primary.id}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
-                      primary.paused
-                        ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
-                    }`}
-                  >
-                    {primary.disabled ? (
-                      "Choose enabled"
-                    ) : primary.paused ? (
-                      <>
-                        <Play size={16} /> Resume
-                      </>
-                    ) : (
-                      <>
-                        <Pause size={16} /> Pause
-                      </>
-                    )}
-                  </button>
-                </Tooltip>
-              </div>
-            </div>
 
             {/* Achievements summary */}
             <div className="bg-white rounded-3xl p-6 border border-gray-200 dark:bg-slate-900 dark:border-slate-800">

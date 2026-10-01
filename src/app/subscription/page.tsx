@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isStripeUrl } from "@/lib/safeRedirect";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "@/components/Icons";
+import Spinner from "@/components/Spinner";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import { api, type ApiError } from "@/lib/api";
 import type {
@@ -12,6 +13,7 @@ import type {
   Profile,
   SubscriptionCancelResponse,
   SubscriptionInfo,
+  Tier,
 } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
 import { useToast } from "@/lib/useToast";
@@ -88,43 +90,53 @@ const plans: PlanCard[] = [
   },
 ];
 
+function planLabelForTier(tier: string | undefined): string {
+  if (tier === "minimum") return "Plus";
+  if (tier === "premium") return "Premium";
+  if (!tier || tier === "basic") return "Free";
+  return tier.charAt(0).toUpperCase() + tier.slice(1);
+}
+
 export default function SubscriptionPage() {
   const router = useRouter();
   const checkoutGuardRef = useRef(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResuming, setIsResuming] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statusLoaded, setStatusLoaded] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [p, sub] = await Promise.all([
-          api.get<Profile>("/api/me"),
-          api.get<SubscriptionInfo>("/api/subscription").catch((err) => {
-            toast.error(errorMessage(err, "Unable to load subscription details."));
-            return null;
-          }),
-        ]);
-        if (!cancelled) {
-          setProfile(p);
-          if (sub) setSubscription(sub);
-        }
-      } catch (err) {
-        if (!cancelled) {
+  const refreshStatus = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const [p, sub] = await Promise.all([
+        api.get<Profile>("/api/me"),
+        api.get<SubscriptionInfo>("/api/subscription").catch((err) => {
           toast.error(errorMessage(err, "Unable to load subscription details."));
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+          return null;
+        }),
+      ]);
+      setProfile(p);
+      if (sub) setSubscription(sub);
+    } catch (err) {
+      toast.error(errorMessage(err, "Unable to load subscription details."));
+    } finally {
+      setIsRefreshing(false);
+      setStatusLoaded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const tier = profile?.tier ?? "basic";
+  useEffect(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
+
+  // New profiles can report "free"; anything that is not Plus or Premium is the Free plan.
+  const tier: Tier =
+    profile?.tier === "minimum" || profile?.tier === "premium" ? profile.tier : "basic";
   const trialEndMs = subscription?.trial_end
     ? new Date(subscription.trial_end).getTime()
     : NaN;
@@ -230,6 +242,15 @@ export default function SubscriptionPage() {
             }
           : prev
       );
+      setSubscription((prev) =>
+        prev
+          ? {
+              ...prev,
+              cancel_at_period_end: false,
+              current_period_end: res.current_period_end ?? prev.current_period_end,
+            }
+          : prev
+      );
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "message" in err
@@ -253,7 +274,16 @@ export default function SubscriptionPage() {
     (planId === "plus" && tier === "minimum") ||
     (planId === "premium" && tier === "premium");
 
-  const paidSubscriber = tier === "minimum" || tier === "premium";
+  const paidTier =
+    subscription?.tier === "minimum" ||
+    subscription?.tier === "premium" ||
+    subscription?.plan === "plus" ||
+    subscription?.plan === "premium" ||
+    tier === "minimum" ||
+    tier === "premium";
+  const cancelAtPeriodEnd =
+    subscription?.cancel_at_period_end === true ||
+    profile?.cancel_at_period_end === true;
   const openingPortal = loading === "portal";
 
   const primaryPlanAction = (planId: string) => {
@@ -299,54 +329,106 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        {paidSubscriber ? (
-          <div className="flex flex-col items-center gap-3">
-            <Tooltip label="Open the Stripe portal to update payment or cancel">
+        <div className="bg-white rounded-3xl p-5 border border-gray-200 dark:bg-slate-900 dark:border-slate-800 min-h-[110px]">
+          {!subscription && !statusLoaded ? (
+            <div className="min-h-[70px] flex items-center justify-center">
+              <Spinner size={20} />
+            </div>
+          ) : subscription ? (
+            <div className="space-y-2">
+              <h2 className="font-black text-gray-900 dark:text-gray-100">
+                Subscription
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Plan:{" "}
+                <span className="font-semibold capitalize">
+                  {subscription.plan === "plus"
+                    ? "Plus"
+                    : subscription.plan === "premium"
+                      ? "Premium"
+                      : subscription.plan === "free"
+                        ? "Free"
+                        : planLabelForTier(subscription.tier)}
+                </span>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Billing status: {subscription.stripe_subscription_status || subscription.status}
+              </p>
+              {cancelAtPeriodEnd ? (
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Cancels at period end — you keep access until then.
+                </p>
+              ) : null}
+              {isTrialing ? (
+                <p className="text-xs font-semibold text-sky-700 dark:text-sky-300">
+                  Free trial — ends {trialDateLabel}. You&apos;ll be charged{" "}
+                  {trialChargeLabel} on {trialDateLabel} unless you cancel.
+                </p>
+              ) : null}
+              {subscription.current_period_end && (
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Current period ends:{" "}
+                  {new Date(subscription.current_period_end).toLocaleString()}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {paidTier ? (
+                  <Tooltip label="Open the Stripe portal to update payment or cancel">
+                    <button
+                      type="button"
+                      onClick={() => void handlePortal()}
+                      className="btn-outline text-sm py-2 px-3"
+                      disabled={loading !== null || isRefreshing}
+                    >
+                      {openingPortal ? "Opening…" : "Manage billing"}
+                    </button>
+                  </Tooltip>
+                ) : null}
+                {paidTier && cancelAtPeriodEnd ? (
+                  <Tooltip label="Keep your plan and continue billing after this period">
+                    <button
+                      type="button"
+                      onClick={() => void handleResume()}
+                      className="btn-outline text-sm py-2 px-3"
+                      disabled={isResuming || loading !== null || isRefreshing}
+                    >
+                      {isResuming ? "Resuming…" : "Resume subscription"}
+                    </button>
+                  </Tooltip>
+                ) : null}
+                {paidTier && !cancelAtPeriodEnd ? (
+                  <Link href="/subscription/cancel" className="btn-outline text-sm py-2 px-3">
+                    Cancel subscription (keeps your account and data)
+                  </Link>
+                ) : null}
+                <Tooltip label="Re-read your plan and billing state">
+                  <button
+                    type="button"
+                    onClick={() => void refreshStatus()}
+                    className="btn-outline text-sm py-2 px-3"
+                    disabled={isRefreshing}
+                  >
+                    {isRefreshing ? "Refreshing…" : "Refresh billing status"}
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <h2 className="font-black text-gray-900 dark:text-gray-100">
+                Subscription
+              </h2>
               <button
                 type="button"
-                onClick={() => void handlePortal()}
-                disabled={loading !== null}
-                className="btn-outline px-6 py-3 font-bold"
+                onClick={() => void refreshStatus()}
+                className="btn-outline text-sm py-2 px-3"
+                disabled={isRefreshing}
               >
-                {loading === "portal" ? "Opening…" : "Manage billing"}
+                {isRefreshing ? "Refreshing…" : "Refresh billing status"}
               </button>
-            </Tooltip>
-            {profile?.cancel_at_period_end ? (
-              <div className="text-center space-y-2">
-                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                  Cancellation scheduled
-                  {profile.subscription_current_period_end
-                    ? ` — access through ${new Date(
-                        profile.subscription_current_period_end
-                      ).toLocaleDateString()}`
-                    : ". You keep access until period end."}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void handleResume()}
-                  disabled={isResuming || loading !== null}
-                  className="btn-outline px-6 py-2 text-sm font-bold"
-                >
-                  {isResuming ? "Resuming…" : "Resume subscription"}
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/subscription/cancel"
-                className="text-sm font-semibold text-gray-500 hover:text-gray-800 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                Cancel subscription (keeps your account and data)
-              </Link>
-            )}
-          </div>
-        ) : null}
-
-        {isTrialing ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800 text-center dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-100">
-            Free trial — ends {trialDateLabel}. You'll be charged{" "}
-            {trialChargeLabel} on {trialDateLabel} unless you cancel.
-          </div>
-        ) : null}
+            </div>
+          )}
+        </div>
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 text-center dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
@@ -355,15 +437,15 @@ export default function SubscriptionPage() {
         )}
 
         <div className="flex flex-col lg:flex-row gap-6 lg:items-end">
-          {[plans[2], plans[0], plans[1]].map((plan) => (
+          {[plans[2], plans[1], plans[0]].map((plan) => (
             <div
               key={plan.id}
               className={`flex-1 rounded-3xl p-6 border-2 transition-all relative ${
                 plan.emphasized
-                  ? "border-emerald-500 shadow-xl lg:scale-105 lg:-mt-4 lg:pb-8 order-first lg:order-2"
+                  ? "border-emerald-500 shadow-xl lg:scale-105 lg:-mt-4 lg:pb-8"
                   : plan.id === "basic"
-                    ? "border-gray-200 opacity-80 dark:border-slate-800 order-2 lg:order-1"
-                    : "border-gray-200 dark:border-slate-800 order-3 lg:order-3"
+                    ? "border-gray-200 opacity-80 dark:border-slate-800"
+                    : "border-gray-200 dark:border-slate-800"
               } bg-white dark:bg-slate-900`}
             >
               {plan.badge && (

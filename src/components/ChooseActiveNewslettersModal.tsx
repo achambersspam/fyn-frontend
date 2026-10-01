@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, type ApiError } from "@/lib/api";
 import type { Newsletter } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
+import { newsletterName, orderNewsletters } from "@/lib/newsletterNames";
 
 export default function ChooseActiveNewslettersModal({
   open,
@@ -80,7 +81,7 @@ export default function ChooseActiveNewslettersModal({
           by disabling or deleting an active one, or by resubscribing.
         </p>
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {newsletters.map((nl) => {
+          {orderNewsletters(newsletters).map((nl) => {
             const checked = selected.includes(nl.id);
             return (
               <button
@@ -94,7 +95,7 @@ export default function ChooseActiveNewslettersModal({
                 }`}
               >
                 <p className="font-bold text-gray-900 dark:text-gray-100">
-                  {nl.title || "Newsletter"}
+                  {newsletterName(nl.id, newsletters)}
                 </p>
                 <p className="text-xs text-gray-500">
                   {nl.topics.length} topic{nl.topics.length !== 1 ? "s" : ""} ·{" "}

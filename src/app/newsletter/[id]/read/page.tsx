@@ -8,6 +8,7 @@ import type { Newsletter, NewsletterIssue } from "@/lib/apiContracts";
 import { getCurrentSession } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 import { errorMessage } from "@/lib/errorMessage";
+import { newsletterName } from "@/lib/newsletterNames";
 import { cacheLastReadIssue } from "@/lib/lastIssueCache";
 import Spinner from "@/components/Spinner";
 import { sanitizeIssueHtml } from "@/lib/sanitizeIssueHtml";
@@ -19,6 +20,7 @@ export default function ReadNewsletterPage() {
 
   const [newsletter, setNewsletter] = useState<Newsletter | null>(null);
   const [issue, setIssue] = useState<NewsletterIssue | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +45,13 @@ export default function ReadNewsletterPage() {
         if (cancelled) return;
         setNewsletter(nl);
         setIssue(latest);
+        // Number comes from the full list; the title stays as the fallback if it can't load.
+        void api
+          .get<Newsletter[]>("/api/newsletters")
+          .then((list) => {
+            if (!cancelled && Array.isArray(list)) setDisplayName(newsletterName(id, list));
+          })
+          .catch(() => undefined);
         void cacheLastReadIssue();
         void trackEvent("newsletter_read_in_dashboard", {
           source: "read_page",
@@ -72,7 +81,7 @@ export default function ReadNewsletterPage() {
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">
-            {newsletter?.title || "Your Newsletter"}
+            {displayName || "Your Newsletter"}
           </h1>
           <Link href="/dashboard" className="text-sm font-bold text-primary hover:underline">
             Back to Dashboard
