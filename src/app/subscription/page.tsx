@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { isStripeUrl } from "@/lib/safeRedirect";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -431,7 +432,7 @@ export default function SubscriptionPage() {
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 text-center dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

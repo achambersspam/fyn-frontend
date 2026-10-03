@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, AlertTriangle } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
@@ -169,7 +170,7 @@ export default function CancelSubscriptionPage() {
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         {(error || loadError) && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+          <div className={ERROR_BOX_CLASS}>
             {error || loadError}
           </div>
         )}

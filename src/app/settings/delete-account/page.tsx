@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
@@ -62,7 +63,7 @@ export default function DeleteAccountPage() {
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-4">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

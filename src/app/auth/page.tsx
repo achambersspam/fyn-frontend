@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
@@ -515,7 +516,7 @@ export default function AuthPage() {
             />
 
             {error && (
-              <div className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">
+              <div className={ERROR_BOX_CLASS}>
                 {error}
               </div>
             )}

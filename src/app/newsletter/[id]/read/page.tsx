@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, type ApiError } from "@/lib/api";
@@ -100,7 +101,7 @@ export default function ReadNewsletterPage() {
         )}
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

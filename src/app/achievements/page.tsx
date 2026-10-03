@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { ChevronLeft, Trophy, Flame, Check } from "@/components/Icons";
@@ -82,7 +83,7 @@ export default function AchievementsPage() {
         {showSkeleton && <AchievementsSkeleton />}
 
         {error && (
-          <div className="rounded-2xl p-5 text-center font-semibold bg-red-600 text-white">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, type ApiError } from "@/lib/api";
@@ -225,7 +226,7 @@ export default function PigeonTopicPriorityPage() {
 
       <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-5">
         {error && (
-          <div className="rounded-xl border border-red-500/80 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

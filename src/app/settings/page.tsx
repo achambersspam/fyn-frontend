@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
@@ -245,7 +246,7 @@ function SettingsPage() {
         )}
 
         {error && (
-          <div className="rounded-2xl border border-red-500/90 bg-red-500/10 px-5 py-4 text-center font-semibold text-white">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

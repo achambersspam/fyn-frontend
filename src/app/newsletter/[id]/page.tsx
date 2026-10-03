@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "@/components/Icons";
 import * as Icons from "@/components/Icons";
@@ -910,7 +911,7 @@ export default function EditNewsletterPage() {
 
 
         {error && (
-          <div className="rounded-xl border border-red-500/80 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

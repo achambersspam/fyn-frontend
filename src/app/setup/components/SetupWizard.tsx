@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -1058,7 +1059,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         {step === 3 && renderDeliverySection}
 
         {error && (
-          <div className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">
+          <div className={ERROR_BOX_CLASS}>
             {error}
           </div>
         )}

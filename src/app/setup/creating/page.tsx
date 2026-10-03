@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
@@ -579,7 +580,7 @@ function CreatingNewsletterContent() {
 
             {error && (
               <div className="mx-auto max-w-xl space-y-4">
-                <p className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">
+                <p className={ERROR_BOX_CLASS}>
                   {error}
                 </p>
                 <button

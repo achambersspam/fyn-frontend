@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { ChevronLeft, MessageCircle, ThumbsDown, ThumbsUp } from "@/components/Icons";
@@ -253,7 +254,7 @@ export default function FeedbackBoardPage() {
               {isSubmittingFeedback ? "Submitting..." : "Submit Feedback"}
             </button>
             {feedbackError && (
-              <div className="rounded-2xl border border-red-500/90 bg-red-500/10 px-4 py-3 text-sm font-semibold text-white">
+              <div className={ERROR_BOX_CLASS}>
                 {feedbackError}
               </div>
             )}
