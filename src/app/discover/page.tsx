@@ -14,6 +14,7 @@ import type {
   Tier,
 } from "@/lib/apiContracts";
 import { TIER_LIMITS } from "@/lib/apiContracts";
+import { errorMessage } from "@/lib/errorMessage";
 
 type CardIcon = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -167,11 +168,7 @@ export default function DiscoverPage() {
         setExploreNew(Array.isArray(explore) ? explore : []);
       })
       .catch((err) => {
-        const message =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load discovery topics.";
-        setError(message);
+        setError(errorMessage(err, "Unable to load discovery topics."));
         setTrendingTopics(fallbackTrending);
         setExploreNew(fallbackExplore);
       });

@@ -194,6 +194,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
   const hasTopicInteractionRef = useRef(false);
   const onboardingTrackedRef = useRef(false);
   const submitInFlightRef = useRef(false);
+  const navigatingToCreatingRef = useRef(false);
   const createClickStartedAtRef = useRef<number | null>(null);
 
   const limits = TIER_LIMITS[tier] ?? TIER_LIMITS.basic;
@@ -565,6 +566,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
           true
         );
       }
+      navigatingToCreatingRef.current = true;
       router.push(`/setup/creating?newsletterId=${created.id}`);
       void api.patch("/api/me", { onboarding_complete: true }).catch(() => {
         /* best effort */
@@ -605,8 +607,11 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
         );
       }
     } finally {
-      setIsSubmitting(false);
-      submitInFlightRef.current = false;
+      // Stay guarded after a successful create until the route change lands.
+      if (!navigatingToCreatingRef.current) {
+        setIsSubmitting(false);
+        submitInFlightRef.current = false;
+      }
     }
   };
 
@@ -653,7 +658,7 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
       focusFirstInvalid(["topics"]);
       return;
     }
-    if (!currentUserId) {
+    if (!currentUserId || !isHydrated) {
       setError("Unable to load your session. Please try again.");
       return;
     }
@@ -682,7 +687,8 @@ export default function SetupWizard({ step }: { step: SetupStep }) {
   };
 
   const persistDraftNow = () => {
-    if (!currentUserId) return;
+    // Before hydration the in-memory state is empty defaults; writing it would wipe the saved draft.
+    if (!currentUserId || !isHydrated) return;
     savePersistedDraft(
       currentUserId,
       buildCurrentDraft({

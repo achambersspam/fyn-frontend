@@ -58,6 +58,8 @@ export default function AuthPage() {
   const redirectingRef = useRef(false);
   const setupBackBypassRef = useRef(false);
   const submittingRef = useRef(false);
+  const resetInFlightRef = useRef(false);
+  const oauthInFlightRef = useRef(false);
 
   const supabase = getSupabaseBrowserClient();
 
@@ -369,6 +371,7 @@ export default function AuthPage() {
   };
 
   const handlePasswordReset = async () => {
+    if (resetInFlightRef.current) return;
     const email = formData.email.trim();
     setError(null);
     setResetMessage(null);
@@ -377,6 +380,7 @@ export default function AuthPage() {
       validation.handleBlur("email");
       return;
     }
+    resetInFlightRef.current = true;
     setIsSendingReset(true);
     try {
       const redirectTo =
@@ -392,12 +396,14 @@ export default function AuthPage() {
       const message = errorMessage(err, "Unable to send reset link. Please try again.");
       setError(message);
     } finally {
+      resetInFlightRef.current = false;
       setIsSendingReset(false);
     }
   };
 
   const handleOAuth = async (provider: "google") => {
-    if (oauthProvider) return;
+    if (oauthProvider || oauthInFlightRef.current) return;
+    oauthInFlightRef.current = true;
     setupBackBypassRef.current = false;
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(AUTH_SETUP_BACK_BYPASS_KEY);
@@ -420,6 +426,7 @@ export default function AuthPage() {
         setError(errorMessage(oauthError, "Unable to continue with Google. Please try again."));
       }
     } finally {
+      oauthInFlightRef.current = false;
       if (mountedRef.current) {
         setOauthProvider(null);
       }

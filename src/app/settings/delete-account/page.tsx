@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
@@ -10,6 +10,7 @@ import { ChevronLeft } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { resetAnalyticsIdentity, trackEvent } from "@/lib/analytics";
+import { errorMessage } from "@/lib/errorMessage";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -17,9 +18,11 @@ export default function DeleteAccountPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const deleteInFlightRef = useRef(false);
 
   const handleDeleteAccount = async () => {
-    if (isDeletingAccount) return;
+    if (isDeletingAccount || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
     setIsDeletingAccount(true);
     setError(null);
     try {
@@ -33,10 +36,10 @@ export default function DeleteAccountPage() {
       }
       router.push("/");
     } catch (err) {
-      const apiErr = err as ApiError;
       setError(
-        apiErr?.message || "We couldn't delete your account. Please try again or contact support."
+        errorMessage(err, "We couldn't delete your account. Please try again or contact support.")
       );
+      deleteInFlightRef.current = false;
       setIsDeletingAccount(false);
       setShowDeleteConfirm(false);
     }
@@ -98,8 +101,8 @@ export default function DeleteAccountPage() {
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex overflow-y-auto bg-black/50 p-4">
+          <div className="m-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
             <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
               Delete your account?
             </h3>

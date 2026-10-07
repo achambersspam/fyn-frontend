@@ -7,6 +7,7 @@ import { api, type ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { getCurrentSession } from "@/lib/supabase";
 import { markArrivedFromCreating } from "@/lib/navCoachMarks";
+import { errorMessage } from "@/lib/errorMessage";
 
 const START_HEADER = "Your newsletter is being created!";
 const DONE_HEADER =
@@ -217,6 +218,7 @@ function CreatingNewsletterContent() {
   const [firstIssueDailyLimitHit, setFirstIssueDailyLimitHit] = useState(false);
   const [showDashboardButton, setShowDashboardButton] = useState(false);
   const inFlightRef = useRef(false);
+  const referralSaveInFlightRef = useRef(false);
   const generationAttemptedRef = useRef(false);
   const mountedRef = useRef(true);
   const firstQueuedSeenAtRef = useRef<number | null>(null);
@@ -394,7 +396,7 @@ function CreatingNewsletterContent() {
           ? "Session not ready yet. Please retry in a moment."
           : apiErr?.status === 429
           ? "Generation is rate-limited temporarily. Please retry shortly."
-          : apiErr?.message || "Failed to generate your first newsletter issue.";
+          : errorMessage(err, "Failed to generate your first newsletter issue.");
       setError(msg);
       setIsRunning(false);
       stopProgressTimer();
@@ -541,9 +543,10 @@ function CreatingNewsletterContent() {
   );
 
   const saveReferral = async () => {
-    if (!referralSource.trim()) {
+    if (!referralSource.trim() || referralSaveInFlightRef.current) {
       return;
     }
+    referralSaveInFlightRef.current = true;
     setIsSavingReferral(true);
     try {
       await api.patch("/api/me", {
@@ -557,6 +560,7 @@ function CreatingNewsletterContent() {
     } catch {
       // Non-blocking for launch flow.
     } finally {
+      referralSaveInFlightRef.current = false;
       setIsSavingReferral(false);
     }
   };

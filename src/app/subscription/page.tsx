@@ -135,6 +135,17 @@ export default function SubscriptionPage() {
     void refreshStatus();
   }, [refreshStatus]);
 
+  // Returning from Stripe via the back/forward cache restores this page frozen mid-redirect.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      checkoutGuardRef.current = false;
+      setLoading(null);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   // New profiles can report "free"; anything that is not Plus or Premium is the Free plan.
   const tier: Tier =
     profile?.tier === "minimum" || profile?.tier === "premium" ? profile.tier : "basic";
@@ -169,30 +180,31 @@ export default function SubscriptionPage() {
     checkoutGuardRef.current = true;
     setLoading(planId);
     setError(null);
+    let redirecting = false;
     try {
       const res = await api.post<CheckoutResponse>("/api/stripe/checkout", {
         plan: planId === "plus" ? "plus" : "premium",
       });
       if (isStripeUrl(res.url)) {
+        redirecting = true;
         window.location.href = res.url;
         return;
       }
       setError("Could not start checkout. Please try again.");
     } catch (err: unknown) {
       const apiErr = err as ApiError;
-      let msg =
-        apiErr?.message ||
-        (err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Checkout failed.");
+      let msg = errorMessage(err, "Checkout failed. Please try again.");
       const code = apiErr?.code;
       if (typeof code === "string" && code.startsWith("CHECKOUT_")) {
         msg = `${msg} Use Manage billing to change plans or cancel duplicate subscriptions.`;
       }
       setError(msg);
     } finally {
-      checkoutGuardRef.current = false;
-      setLoading(null);
+      // Stay guarded while the browser navigates to Stripe.
+      if (!redirecting) {
+        checkoutGuardRef.current = false;
+        setLoading(null);
+      }
     }
   };
 
@@ -201,27 +213,28 @@ export default function SubscriptionPage() {
     checkoutGuardRef.current = true;
     setLoading("portal");
     setError(null);
+    let redirecting = false;
     try {
       const res = await api.post<CheckoutResponse>("/api/stripe/portal", {});
       if (isStripeUrl(res.url)) {
+        redirecting = true;
         window.location.href = res.url;
         return;
       }
       setError("Could not open billing portal.");
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Portal unavailable.";
-      setError(msg);
+      setError(errorMessage(err, "Billing portal is unavailable. Please try again."));
     } finally {
-      checkoutGuardRef.current = false;
-      setLoading(null);
+      if (!redirecting) {
+        checkoutGuardRef.current = false;
+        setLoading(null);
+      }
     }
   };
 
   const handleResume = async () => {
     if (checkoutGuardRef.current || loading !== null || isResuming) return;
+    checkoutGuardRef.current = true;
     setIsResuming(true);
     setError(null);
     try {
@@ -253,12 +266,9 @@ export default function SubscriptionPage() {
           : prev
       );
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Could not resume your subscription.";
-      setError(msg);
+      setError(errorMessage(err, "Could not resume your subscription."));
     } finally {
+      checkoutGuardRef.current = false;
       setIsResuming(false);
     }
   };

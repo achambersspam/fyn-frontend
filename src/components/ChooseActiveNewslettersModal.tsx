@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, type ApiError } from "@/lib/api";
 import type { Newsletter } from "@/lib/apiContracts";
@@ -22,6 +22,7 @@ export default function ChooseActiveNewslettersModal({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +55,8 @@ export default function ChooseActiveNewslettersModal({
       setError(`Choose ${cap} newsletter${cap === 1 ? "" : "s"} to keep enabled.`);
       return;
     }
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setSaving(true);
     setError(null);
     try {
@@ -65,6 +68,7 @@ export default function ChooseActiveNewslettersModal({
     } catch (err) {
       setError(errorMessage(err as ApiError, "Could not update which newsletters stay active."));
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   };

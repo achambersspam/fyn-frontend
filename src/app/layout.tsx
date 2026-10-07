@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -8,8 +8,12 @@ import { ToastProvider } from "@/components/Toast";
 import CookieConsent from "@/components/CookieConsent";
 import OfflineBanner from "@/components/OfflineBanner";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import KeyboardFocusScroll from "@/components/KeyboardFocusScroll";
 
 const inter = Inter({ subsets: ["latin"] });
+
+// Android Chrome: resize the layout viewport (not just the visual one) when the keyboard opens.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, interactiveWidget: "resizes-content" };
 
 const SITE_URL = "https://foryounewsletter.com";
 
@@ -63,6 +67,7 @@ export default function RootLayout({
           <ToastProvider>
             <ObservabilityBootstrap />
             <ServiceWorkerRegister />
+            <KeyboardFocusScroll />
             <OfflineBanner />
             <CookieConsent />
             <div className="min-h-screen">

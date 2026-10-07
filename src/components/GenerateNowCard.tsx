@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, type ApiError } from "@/lib/api";
@@ -54,6 +54,7 @@ export default function GenerateNowCard({
     Array<{ topic: string; details: string }>
   >([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const generatingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   // One nonce per modal session: double-clicks and retries dedupe
   // server-side, while a fresh modal open is a genuinely new request.
@@ -111,7 +112,8 @@ export default function GenerateNowCard({
     newsletterId?: string;
     topics?: Array<{ topic: string; details: string }>;
   }) => {
-    if (isGenerating) return;
+    if (isGenerating || generatingRef.current) return;
+    generatingRef.current = true;
     setIsGenerating(true);
     setError(null);
     const previous = status;
@@ -155,6 +157,7 @@ export default function GenerateNowCard({
         code: apiErr?.code || "unknown",
       });
     } finally {
+      generatingRef.current = false;
       setIsGenerating(false);
     }
   };
@@ -187,11 +190,11 @@ export default function GenerateNowCard({
 
       {step !== "closed" && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex overflow-y-auto bg-black/50 p-4"
           onClick={closeModal}
         >
           <div
-            className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+            className="m-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

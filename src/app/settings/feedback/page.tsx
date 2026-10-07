@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
@@ -26,6 +26,8 @@ export default function FeedbackBoardPage() {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackActionBusy, setFeedbackActionBusy] = useState<string | null>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const feedbackSubmitInFlightRef = useRef(false);
+  const actionInFlightRef = useRef<Set<string>>(new Set());
   const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
   const [commentsByPost, setCommentsByPost] = useState<Record<string, UiFeedbackComment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -85,6 +87,7 @@ export default function FeedbackBoardPage() {
   };
 
   const submitFeedback = async () => {
+    if (feedbackSubmitInFlightRef.current) return;
     if (!feedbackBody.trim() || isSubmittingFeedback) {
       setFeedbackError("Please add your feedback before submitting.");
       return;
@@ -92,6 +95,7 @@ export default function FeedbackBoardPage() {
     const trimmed = feedbackBody.trim();
     const generatedTitle = trimmed.slice(0, 80);
     setFeedbackError(null);
+    feedbackSubmitInFlightRef.current = true;
     setIsSubmittingFeedback(true);
     try {
       await api.post("/api/feedback", { title: generatedTitle, body: trimmed });
@@ -100,13 +104,17 @@ export default function FeedbackBoardPage() {
     } catch (err: unknown) {
       setFeedbackError(toUiError(err, "Failed to submit feedback."));
     } finally {
+      feedbackSubmitInFlightRef.current = false;
       setIsSubmittingFeedback(false);
     }
   };
 
   const voteFeedback = async (post: FeedbackPost, vote: 1 | -1) => {
-    setFeedbackError(null);
     const postId = post.id;
+    const guardKey = `vote:${postId}`;
+    if (actionInFlightRef.current.has(guardKey)) return;
+    actionInFlightRef.current.add(guardKey);
+    setFeedbackError(null);
     const effectiveVote = post.user_vote === vote ? 0 : vote;
     const previousPosts = feedbackPosts;
     setFeedbackPosts((prev) =>
@@ -139,11 +147,15 @@ export default function FeedbackBoardPage() {
       setFeedbackPosts(previousPosts);
       setFeedbackError(toUiError(err, "Could not save your vote right now."));
     } finally {
+      actionInFlightRef.current.delete(guardKey);
       setFeedbackActionBusy(null);
     }
   };
 
   const loadComments = async (postId: string) => {
+    const guardKey = `comments:${postId}`;
+    if (actionInFlightRef.current.has(guardKey)) return;
+    actionInFlightRef.current.add(guardKey);
     setFeedbackError(null);
     setFeedbackActionBusy(`comments:${postId}`);
     try {
@@ -159,6 +171,7 @@ export default function FeedbackBoardPage() {
     } catch (err: unknown) {
       setFeedbackError(toUiError(err, "Could not load comments right now."));
     } finally {
+      actionInFlightRef.current.delete(guardKey);
       setFeedbackActionBusy(null);
     }
   };
@@ -171,6 +184,9 @@ export default function FeedbackBoardPage() {
     const postId = post.id;
     const body = (commentDrafts[postId] || "").trim();
     if (!body) return;
+    const guardKey = `comment:${postId}`;
+    if (actionInFlightRef.current.has(guardKey)) return;
+    actionInFlightRef.current.add(guardKey);
     setFeedbackError(null);
     setFeedbackActionBusy(`comment:${postId}`);
     const optimisticId = `temp-${Date.now()}`;
@@ -211,6 +227,7 @@ export default function FeedbackBoardPage() {
       }));
       setFeedbackError(toUiError(err, "Could not submit comment right now."));
     } finally {
+      actionInFlightRef.current.delete(guardKey);
       setFeedbackActionBusy(null);
     }
   };

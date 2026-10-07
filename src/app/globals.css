@@ -16,6 +16,18 @@
   }
 }
 
+@layer base {
+  /* Keyboard open on a touch device: hide the fixed bottom nav so it cannot cover fields. */
+  html[data-kb-open] .safe-area-bottom {
+    display: none;
+  }
+  input,
+  textarea,
+  select {
+    scroll-margin-block: 96px;
+  }
+}
+
 @layer components {
   .btn-primary {
     @apply bg-primary hover:bg-primary-dark text-white font-bold py-4 px-8 rounded-xl transition-transform duration-100 transform hover:scale-105 active:scale-[0.97] disabled:transform-none;

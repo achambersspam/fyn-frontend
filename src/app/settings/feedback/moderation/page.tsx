@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "@/components/Icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -34,6 +34,7 @@ export default function FeedbackModerationPage() {
   const [queue, setQueue] = useState<Queue>({ posts: [], comments: [] });
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const moderatingRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,13 +71,15 @@ export default function FeedbackModerationPage() {
       if (!response.ok) throw new Error("Could not load moderation queue.");
       setQueue(await response.json());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load moderation queue.");
+      setError("Could not load moderation queue.");
     } finally {
       setLoading(false);
     }
   };
 
   const moderate = async (type: "post" | "comment", id: string, status: "approved" | "rejected") => {
+    if (moderatingRef.current.has(id)) return;
+    moderatingRef.current.add(id);
     setError(null);
     setBusyId(id);
     try {
@@ -90,8 +93,9 @@ export default function FeedbackModerationPage() {
         comments: current.comments.filter((comment) => comment.id !== id),
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update moderation status.");
+      setError("Could not update moderation status.");
     } finally {
+      moderatingRef.current.delete(id);
       setBusyId(null);
     }
   };

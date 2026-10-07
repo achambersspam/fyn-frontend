@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
@@ -22,6 +22,7 @@ export default function PauseDeliveryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingPause, setTogglingPause] = useState<string | null>(null);
+  const toggleInFlightRef = useRef(false);
   const [showChooseActive, setShowChooseActive] = useState(false);
 
   useEffect(() => {
@@ -61,6 +62,8 @@ export default function PauseDeliveryPage() {
       setShowChooseActive(true);
       return;
     }
+    if (toggleInFlightRef.current) return;
+    toggleInFlightRef.current = true;
     setTogglingPause(nl.id);
     setError(null);
     const previousPaused = nl.paused;
@@ -81,6 +84,7 @@ export default function PauseDeliveryPage() {
         setError("Couldn't update your newsletter. Please try again.");
       }
     } finally {
+      toggleInFlightRef.current = false;
       setTogglingPause(null);
     }
   };

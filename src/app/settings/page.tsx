@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -46,6 +46,8 @@ function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingSubscriptionState, setIsUpdatingSubscriptionState] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const signOutInFlightRef = useRef(false);
+  const unsubscribeInFlightRef = useRef(false);
   const checkoutSuccess = searchParams.get("checkout") === "success";
   const { toast } = useToast();
 
@@ -105,7 +107,8 @@ function SettingsPage() {
   }, [isLoading, profile?.id]);
 
   const handleSignOut = async () => {
-    if (isSigningOut) return;
+    if (isSigningOut || signOutInFlightRef.current) return;
+    signOutInFlightRef.current = true;
     setIsSigningOut(true);
     try {
       const supabase = getSupabaseBrowserClient();
@@ -119,6 +122,7 @@ function SettingsPage() {
       }
       router.push("/");
     } finally {
+      signOutInFlightRef.current = false;
       setIsSigningOut(false);
     }
   };
@@ -143,7 +147,8 @@ function SettingsPage() {
   };
 
   const toggleUnsubscribe = async (nextValue: boolean) => {
-    if (!profile) return;
+    if (!profile || unsubscribeInFlightRef.current) return;
+    unsubscribeInFlightRef.current = true;
     const startedAt = performance.now();
     const previous = profile;
     setProfile({ ...profile, is_unsubscribed: nextValue });
@@ -188,6 +193,7 @@ function SettingsPage() {
         });
       }
     } finally {
+      unsubscribeInFlightRef.current = false;
       setIsUpdatingSubscriptionState(false);
     }
   };

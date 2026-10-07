@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import GenerateNowCard from "@/components/GenerateNowCard";
@@ -93,6 +93,7 @@ function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isResubscribing, setIsResubscribing] = useState(false);
+  const resubscribeInFlightRef = useRef(false);
   const [showChooseActive, setShowChooseActive] = useState(false);
   const showFirstIssueLimitNotice = searchParams.get("firstIssueLimitHit") === "1";
   const showSkeleton = useDelayedVisibility(isLoading, 200);
@@ -205,6 +206,8 @@ function DashboardPage() {
   }, [isLoading, newsletters.length]);
 
   const handleResubscribe = async () => {
+    if (resubscribeInFlightRef.current) return;
+    resubscribeInFlightRef.current = true;
     setIsResubscribing(true);
     void trackEvent("resubscribe_clicked", { source: "dashboard" });
     try {
@@ -214,6 +217,7 @@ function DashboardPage() {
     } catch {
       setError("Unable to reactivate newsletter right now. Please try again.");
     } finally {
+      resubscribeInFlightRef.current = false;
       setIsResubscribing(false);
     }
   };

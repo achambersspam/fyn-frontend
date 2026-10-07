@@ -15,9 +15,9 @@ const UPGRADE_REQUIRED = "Instant generation is a paid feature. Upgrade to conti
 const TIER_LIMIT = "You've reached your plan's limit. Upgrade for more.";
 
 const LEAK_PATTERN =
-  /PGRST|permission denied|violates|sk_live|sk_test|row-level|JWT|syntax error|relation "|column "|SELECT\s+.+\s+FROM\s+/i;
+  /PGRST|permission denied|violates|sk_live|sk_test|row-level|JWT|syntax error|relation "|column "|SELECT\s+.+\s+FROM\s+|failed to fetch|fetch failed|network\s?error|network request failed|load failed|type\s?error|reference\s?error|syntax\s?error|range\s?error|unexpected (token|end)|\bjson\b|is not a function|is not defined|cannot read|undefined|\bnull\b|\[object|\bat\s+\S+\s*\(.*:\d+|ECONN|ETIMEDOUT|ENOTFOUND|socket hang up|AbortError|request failed|status code|internal server error|bad gateway|gateway time|service unavailable|refresh token|\bHTTP\b|\bSQL\b|\bstack\b|\b4\d\d\b\s*(error|\()|\{.*"|^[A-Z][A-Z0-9_]{3,}$/i;
 
-const looksLikeInternalLeak = (text: string): boolean => {
+export const looksLikeInternalLeak = (text: string): boolean => {
   const trimmed = text.trim();
   if (!trimmed) return false;
   return LEAK_PATTERN.test(trimmed);

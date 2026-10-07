@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "@/components/Icons";
 import * as Icons from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/errorMessage";
+import { errorMessage, looksLikeInternalLeak } from "@/lib/errorMessage";
 import { useToast } from "@/lib/useToast";
 import Spinner from "@/components/Spinner";
 import type {
@@ -96,6 +96,10 @@ export default function EditNewsletterPage() {
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const saveInFlightRef = useRef(false);
+  const deleteInFlightRef = useRef(false);
+  const reactivateInFlightRef = useRef(false);
+  const pauseExitInFlightRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [showUnsaved, setShowUnsaved] = useState(false);
   const { toast } = useToast();
@@ -303,6 +307,7 @@ export default function EditNewsletterPage() {
   }, []);
 
   const handleSave = useCallback(async (): Promise<boolean> => {
+    if (saveInFlightRef.current) return false;
     const saveStartedAt = performance.now();
     if (!id) {
       setError("Missing newsletter id.");
@@ -368,6 +373,7 @@ export default function EditNewsletterPage() {
       return false;
     }
 
+    saveInFlightRef.current = true;
     setIsSaving(true);
     setError(null);
     setNearSendWarning(false);
@@ -445,7 +451,9 @@ export default function EditNewsletterPage() {
       const apiErr = err as ApiError;
       const details =
         Array.isArray(apiErr?.details) && apiErr.details.length > 0
-          ? apiErr.details.filter((item): item is string => typeof item === "string")
+          ? apiErr.details.filter(
+              (item): item is string => typeof item === "string" && !looksLikeInternalLeak(item)
+            )
           : [];
       const msg =
         details.length > 0
@@ -469,6 +477,7 @@ export default function EditNewsletterPage() {
       toast.error(errorMessage(err, msg));
       return false;
     } finally {
+      saveInFlightRef.current = false;
       setIsSaving(false);
     }
   }, [
@@ -517,7 +526,8 @@ export default function EditNewsletterPage() {
   };
 
   const handleDelete = useCallback(async () => {
-    if (!id || isDeleting) return;
+    if (!id || isDeleting || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
     setIsDeleting(true);
     setError(null);
     try {
@@ -527,6 +537,7 @@ export default function EditNewsletterPage() {
       const message = errorMessage(err, "Failed to delete newsletter.");
       setError(message);
       toast.error(message);
+      deleteInFlightRef.current = false;
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -603,6 +614,8 @@ export default function EditNewsletterPage() {
               type="button"
               disabled={isReactivating}
               onClick={async () => {
+                if (reactivateInFlightRef.current) return;
+                reactivateInFlightRef.current = true;
                 setIsReactivating(true);
                 try {
                   await api.patch(`/api/newsletters/${id}/pause`, { is_paused: false });
@@ -620,6 +633,7 @@ export default function EditNewsletterPage() {
                     router.push("/newsletter");
                   }
                 } finally {
+                  reactivateInFlightRef.current = false;
                   setIsReactivating(false);
                 }
               }}
@@ -996,13 +1010,15 @@ export default function EditNewsletterPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!id || isPausingForExit) return;
+                  if (!id || isPausingForExit || pauseExitInFlightRef.current) return;
+                  pauseExitInFlightRef.current = true;
                   setIsPausingForExit(true);
                   try {
                     await api.patch(`/api/newsletters/${id}/pause`, { is_paused: true });
                   } catch {
                     // best-effort pause before navigating away
                   } finally {
+                    pauseExitInFlightRef.current = false;
                     setIsPausingForExit(false);
                     setShowInvalidLeaveWarning(false);
                     const targetNav = pendingNav;

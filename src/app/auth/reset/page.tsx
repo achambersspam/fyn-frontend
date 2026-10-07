@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { validators } from "@/lib/useFieldValidation";
+import { errorMessage } from "@/lib/errorMessage";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isReady, setIsReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitInFlightRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +48,7 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitInFlightRef.current) return;
     setError(null);
     setMessage(null);
 
@@ -59,6 +62,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    submitInFlightRef.current = true;
     setIsSubmitting(true);
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
@@ -66,11 +70,10 @@ export default function ResetPasswordPage() {
       setMessage("Password updated. Redirecting you to your dashboard...");
       setTimeout(() => router.replace("/dashboard"), 900);
     } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? (err as { message: string }).message
-          : "Unable to update your password. Please request a new reset link.";
-      setError(message);
+      setError(
+        errorMessage(err, "Unable to update your password. Please request a new reset link.")
+      );
+      submitInFlightRef.current = false;
     } finally {
       setIsSubmitting(false);
     }

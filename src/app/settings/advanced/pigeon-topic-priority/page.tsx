@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,7 @@ export default function PigeonTopicPriorityPage() {
   const [priorityRows, setPriorityRows] = useState<PriorityTopicRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editsRemaining, setEditsRemaining] = useState<number | null>(null);
@@ -116,11 +117,7 @@ export default function PigeonTopicPriorityPage() {
           router.replace("/auth");
           return;
         }
-        const message =
-          err && typeof err === "object" && "message" in err
-            ? (err as { message: string }).message
-            : "Unable to load newsletter priorities.";
-        setError(message);
+        setError(errorMessage(err, "Unable to load newsletter priorities."));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -164,7 +161,8 @@ export default function PigeonTopicPriorityPage() {
   };
 
   const handleSave = async () => {
-    if (!selectedNewsletter) return;
+    if (!selectedNewsletter || saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setIsSaving(true);
     setError(null);
     setSuccess("Pigeon topic priorities saved.");
@@ -203,6 +201,7 @@ export default function PigeonTopicPriorityPage() {
       toast.error(message);
       setPriorityRows(previousRows);
     } finally {
+      saveInFlightRef.current = false;
       setIsSaving(false);
     }
   };

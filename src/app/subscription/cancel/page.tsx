@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ERROR_BOX_CLASS } from "@/lib/errorBox";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, AlertTriangle } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
+import { errorMessage } from "@/lib/errorMessage";
 import type {
   SubscriptionCancelResponse,
   SubscriptionInfo,
@@ -33,6 +34,7 @@ export default function CancelSubscriptionPage() {
   const router = useRouter();
   const [reason, setReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
+  const actionInFlightRef = useRef(false);
   const [isResuming, setIsResuming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
@@ -76,7 +78,8 @@ export default function CancelSubscriptionPage() {
   }, [router]);
 
   const handleCancel = async () => {
-    if (isCancelling) return;
+    if (isCancelling || actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setIsCancelling(true);
     setError(null);
     try {
@@ -92,16 +95,16 @@ export default function CancelSubscriptionPage() {
       setCancelled(true);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
-      setError(
-        apiErr?.message || "Unable to cancel. Please try again."
-      );
+      setError(errorMessage(apiErr, "Unable to cancel. Please try again."));
     } finally {
+      actionInFlightRef.current = false;
       setIsCancelling(false);
     }
   };
 
   const handleResume = async () => {
-    if (isResuming) return;
+    if (isResuming || actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setIsResuming(true);
     setError(null);
     try {
@@ -111,12 +114,15 @@ export default function CancelSubscriptionPage() {
       );
       if (payload.cancel_at_period_end === true) {
         setError("Could not resume your subscription. Please try again.");
+        actionInFlightRef.current = false;
         return;
       }
       router.push("/settings");
+      return; // stay guarded until navigation lands
     } catch (err: unknown) {
       const apiErr = err as ApiError;
-      setError(apiErr?.message || "Could not resume your subscription. Please try again.");
+      setError(errorMessage(apiErr, "Could not resume your subscription. Please try again."));
+      actionInFlightRef.current = false;
     } finally {
       setIsResuming(false);
     }
