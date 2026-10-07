@@ -14,6 +14,7 @@ const PRESET_MAX = 4;
 const STOCK_THEME_MAX = 3;
 const WEATHER_MAX_LOCATIONS = 3;
 const PER_SPORT_TEAM_LIMIT = 3;
+const GENERAL_SPORTS_NEWS = "General Sports News";
 const GOLF_SELECTION_LIMIT = 3;
 const TOPIC_SUBTEXT: Record<string, string> = {
   "Tech & AI": "Get news on articles about these topics below",
@@ -562,6 +563,10 @@ const parseSports = (value: string): SportsState => {
       continue;
     }
     if (!payload.length) continue;
+    if (key === "General") {
+      state.enabledSports = Array.from(new Set([...state.enabledSports, GENERAL_SPORTS_NEWS]));
+      continue;
+    }
     if (key === "Golfers" || key === "Golf") {
       state.enabledSports = Array.from(new Set([...state.enabledSports, "Golf"]));
       state.golfPlayers = payload.slice(0, GOLF_SELECTION_LIMIT);
@@ -642,6 +647,53 @@ const parseSports = (value: string): SportsState => {
   }
 
   if (state.enabledSports.length === 0 && value.trim()) {
+    // The API returns saved sports picks as a flat "A and B" list of names (the
+    // `Enabled:`/`League: [...]` envelope is not stored), so rebuild the picks by name.
+    const names = value
+      .split(/\s+and\s+|,|\|/i)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const enable = (key: string) => {
+      state.enabledSports = Array.from(new Set([...state.enabledSports, key]));
+    };
+    for (const name of names) {
+      if (name.toLowerCase() === GENERAL_SPORTS_NEWS.toLowerCase()) {
+        enable(GENERAL_SPORTS_NEWS);
+        continue;
+      }
+      const league = PRO_SPORTS.find((sport) => sport.teams.includes(name));
+      if (league) {
+        enable(league.key);
+        state.proTeams[league.key] = [...(state.proTeams[league.key] || []), name].slice(0, PER_SPORT_TEAM_LIMIT);
+        continue;
+      }
+      if (GOLF_NEWS_OPTIONS.includes(name)) {
+        enable("Golf");
+        state.golfPlayers = [...state.golfPlayers, name].slice(0, GOLF_SELECTION_LIMIT);
+        continue;
+      }
+      for (const conference of COLLEGE_FOOTBALL_CONFERENCES) {
+        if ((COLLEGE_FOOTBALL_TEAMS_BY_CONFERENCE[conference] || []).includes(name)) {
+          enable("College Football");
+          state.collegeFootballTeamsByConference[conference] = [
+            ...(state.collegeFootballTeamsByConference[conference] || []),
+            name,
+          ];
+        }
+      }
+      for (const conference of COLLEGE_BASKETBALL_CONFERENCES) {
+        if ((COLLEGE_BASKETBALL_TEAMS_BY_CONFERENCE[conference] || []).includes(name)) {
+          enable("College Basketball");
+          state.collegeBasketballTeamsByConference[conference] = [
+            ...(state.collegeBasketballTeamsByConference[conference] || []),
+            name,
+          ];
+        }
+      }
+    }
+  }
+
+  if (state.enabledSports.length === 0 && value.trim()) {
     // Legacy free-text sports details: keep one pseudo-player to avoid clearing old values
     state.enabledSports = ["Golf"];
     state.golfPlayers = normalizeCommaParts(value).slice(0, 3);
@@ -653,6 +705,9 @@ const serializeSports = (sports: SportsState) => {
   const segments: string[] = [];
   if (sports.enabledSports.length > 0) {
     segments.push(`Enabled: [${sports.enabledSports.join(", ")}]`);
+  }
+  if (sports.enabledSports.includes(GENERAL_SPORTS_NEWS)) {
+    segments.push(`General: [${GENERAL_SPORTS_NEWS}]`);
   }
   for (const league of PRO_SPORTS) {
     const selectedTeams = sports.proTeams[league.key] || [];
@@ -964,6 +1019,7 @@ export default function TopicDetailEditor({
   if (topic === "Sports") {
     const sports = parseSports(value);
     const selectedPlayerCount =
+      (sports.enabledSports.includes(GENERAL_SPORTS_NEWS) ? 1 : 0) +
       Object.values(sports.proTeams).reduce((sum, teams) => sum + teams.length, 0) +
       sports.golfPlayers.length +
       Object.values(sports.collegeFootballTeamsByConference).reduce(
@@ -978,6 +1034,14 @@ export default function TopicDetailEditor({
     const setSports = (next: SportsState) => onChange(serializeSports(next));
 
     const toggleSport = (sportLabel: string) => {
+      if (
+        sportLabel === GENERAL_SPORTS_NEWS &&
+        !enabled.includes(sportLabel) &&
+        selectedPlayerCount + 1 > sportsCap
+      ) {
+        setSportsNotice(`Current plan limit is ${sportsCap} total teams/topics`);
+        return;
+      }
       const nextEnabled = enabled.includes(sportLabel)
         ? enabled.filter((item) => item !== sportLabel)
         : [...enabled, sportLabel];
@@ -1122,7 +1186,7 @@ export default function TopicDetailEditor({
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{topicSubtext}</p>
         ) : null}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          {["NFL", "MLB", "NBA", "NHL", "MLS", "Golf", "College Football", "College Basketball"].map(
+          {[GENERAL_SPORTS_NEWS, "NFL", "MLB", "NBA", "NHL", "MLS", "Golf", "College Football", "College Basketball"].map(
             (sport) => (
               <button
                 key={sport}
@@ -1135,6 +1199,12 @@ export default function TopicDetailEditor({
             )
           )}
         </div>
+        {enabled.includes(GENERAL_SPORTS_NEWS) ? (
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            General Sports News: the top 1-4 men&apos;s stories of the day across the NFL, NBA, MLB, NHL
+            and major European soccer, depending on the time you give Sports.
+          </p>
+        ) : null}
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
           Total selected teams/topics: {selectedPlayerCount}/{sportsCap}
         </p>
