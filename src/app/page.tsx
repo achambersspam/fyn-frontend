@@ -60,17 +60,25 @@ export default function LandingPage() {
                 aria-hidden
                 className="animate-glow-pulse absolute inset-0 mx-auto h-56 w-56 rounded-full bg-primary/25 blur-3xl sm:h-72 sm:w-72"
               />
-              <video
-                src="/applogo-wave.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="none"
-                poster="/pigeon-filled.svg"
-                aria-label="The For You Newsletter animated logo"
-                className="animate-fade-up delay-200 relative z-10 mx-auto h-auto w-full max-w-md rounded-3xl object-contain drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)]"
-              />
+              {/* The mp4 has a black background baked in (no alpha), so crop to the
+                  icon's own rounded shape. Frame is 2880x2880; artwork spans
+                  x 236-2646, y 362-2712 (inset 8px to drop the antialiased fringe),
+                  corner radius ~21%. Wrapper clips; video is scaled + offset. */}
+              <div
+                className="animate-fade-up delay-200 relative z-10 mx-auto aspect-[2410/2350] w-full max-w-[22rem] overflow-hidden rounded-[21%/20.5%] bg-[url('/pigeon-filled.svg')] bg-contain bg-center bg-no-repeat drop-shadow-[0_18px_40px_rgba(28,176,246,0.45)] sm:max-w-md"
+              >
+                <video
+                  src="/applogo-wave.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="none"
+                  aria-label="The For You Newsletter animated logo"
+                  className="absolute max-w-none"
+                  style={{ width: "119.5%", left: "-9.79%", top: "-15.4%" }}
+                />
+              </div>
             </div>
 
             {/* Text: second in DOM so it shows below on mobile, right column on desktop */}
