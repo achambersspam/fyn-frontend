@@ -205,6 +205,31 @@ function DashboardPage() {
     }
   }, [isLoading, newsletters.length]);
 
+  // Founder only: the first dashboard load of a session forwards to the master
+  // dashboard (the API answers is_founder=false for everyone else).
+  const [isFounder, setIsFounder] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ is_founder: boolean }>("/api/admin/me")
+      .then((res) => {
+        if (cancelled || !res?.is_founder) return;
+        setIsFounder(true);
+        try {
+          if (!sessionStorage.getItem("fyn_founder_routed")) {
+            sessionStorage.setItem("fyn_founder_routed", "1");
+            router.replace("/admin");
+          }
+        } catch {
+          // sessionStorage unavailable: stay on the normal dashboard.
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   const handleResubscribe = async () => {
     if (resubscribeInFlightRef.current) return;
     resubscribeInFlightRef.current = true;
@@ -233,6 +258,13 @@ function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-slate-950">
+      {isFounder ? (
+        <div className="bg-primary/10 px-4 py-2 text-center text-sm font-bold">
+          <Link href="/admin" className="text-primary hover:underline">
+            Open founder dashboard &rarr;
+          </Link>
+        </div>
+      ) : null}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-10 py-3 dark:bg-slate-950 dark:border-slate-800">
         <div className="max-w-[820px] w-full mx-auto">
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">

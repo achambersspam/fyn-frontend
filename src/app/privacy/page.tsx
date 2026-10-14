@@ -5,7 +5,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: October 14, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           For You Newsletter ("we," "us," or "our") operates the For You Newsletter service
@@ -54,19 +54,48 @@ export default function PrivacyPage() {
           </Subsection>
           <Subsection title="Newsletter preferences">
             We store the topics, subtopics, and customization settings you choose so we can
-            generate a newsletter personalized to you.
+            generate a newsletter personalized to you. Some choices (for example health topics,
+            the teams you follow, or the stocks you track) can say something about your
+            interests. We use them only to write and deliver your newsletter and we do not infer
+            sensitive characteristics from them or use them for advertising.
           </Subsection>
           <Subsection title="Payment information">
             Payments are processed entirely by Stripe, Inc. We never see or store your card
             number, bank details, or full payment credentials. We receive a Stripe customer
             ID and subscription status from Stripe solely to manage your plan.
           </Subsection>
+          <Subsection title="How you heard about us">
+            While your first newsletter is being created we ask how you found us. If you
+            answer, we store your choice (and any text you type under &quot;Other&quot;) on your
+            profile. It is optional and is used only to understand which channels work.
+          </Subsection>
+          <Subsection title="Feedback you give us when you leave">
+            When you cancel a subscription, pause a newsletter, or delete a newsletter, we
+            offer a short &quot;why?&quot; choice and, for some answers, a box to explain. Your
+            answer is optional. If you give one we store the reason and anything you type,
+            linked to your account. For cancellations, the reason is also passed to Stripe as
+            the cancellation comment on your subscription. Please do not include sensitive
+            personal information in free-text answers.
+          </Subsection>
+          <Subsection title="Feedback board">
+            If you post, vote, or comment on the feedback board, we store that content
+            together with your account. Posts may be reviewed by us before they appear.
+          </Subsection>
           <Subsection title="Usage and analytics data">
             If you accept analytics cookies, we collect product-usage events through PostHog,
-            including page views, feature use, autocapture, and session recording. Your
-            PostHog distinct ID is your account UUID (Linked to you: Yes). You can Reject
-            analytics in the cookie banner, and we honor Do Not Track as a rejection. Crash
-            reports via Sentry are necessary to run the Service and are not consent-gated.
+            including page views, feature use, autocapture, and session recording, and we
+            also record a limited set of the same product events in our own database. Your
+            PostHog distinct ID is your account UUID (Linked to you: Yes). If you Reject
+            analytics, or your browser sends a Do Not Track or Global Privacy Control signal,
+            we do not record these analytics events. Crash reports via Sentry are necessary
+            to run the Service and are not consent-gated.
+          </Subsection>
+          <Subsection title="Service operations records">
+            To keep the Service reliable we record when something goes wrong or degrades while
+            building a newsletter, for example a failed issue, a topic that could not be
+            covered, or a news source that was unavailable. These records include the time, the
+            topic, a technical message, and your account identifier, so we can fix problems
+            affecting your newsletter. They are used for operations and support, not marketing.
           </Subsection>
           <Subsection title="Technical data">
             Standard server and infrastructure logs may record your IP address, browser type,
@@ -97,7 +126,11 @@ export default function PrivacyPage() {
                   ["Email address", "Account, login, newsletter delivery", "Yes", "No"],
                   ["Newsletter preferences", "Personalizing your content", "Yes", "No"],
                   ["Payment/subscription status", "Billing (card data held by Stripe, not us)", "Yes", "No"],
-                  ["Usage & analytics events", "Improving the product (PostHog UUID, autocapture, session recording)", "Yes", "Yes"],
+                  ["How you heard about us (optional)", "Understanding which channels bring users", "Yes", "No"],
+                  ["Cancel / pause / delete reasons (optional)", "Improving the product and pricing", "Yes", "No"],
+                  ["Feedback board posts, votes, comments", "Product feedback", "Yes", "No"],
+                  ["Usage & analytics events (only if you accept)", "Improving the product (PostHog UUID, autocapture, session recording, first-party events)", "Yes", "Yes"],
+                  ["Service operations records", "Reliability, support, fixing failed newsletters", "Yes", "No"],
                   ["Crash reports (Sentry)", "Error monitoring and reliability", "Yes", "No"],
                   ["Technical logs (IP, browser)", "Security, debugging, abuse prevention", "Not for marketing", "No"],
                 ].map((row) => (
@@ -121,7 +154,10 @@ export default function PrivacyPage() {
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Newsletter emails may include an open pixel and click redirects signed with HMAC
             so we can tell whether an issue was opened or a source link was followed. These
-            are first-party metrics. We do not use a third-party ad network for this.
+            are first-party metrics. We do not use a third-party ad network for this. Many
+            email apps can block the pixel (for example by not loading remote images). Every
+            newsletter email has an unsubscribe link, and we send a separate one-click
+            unsubscribe header that your email app can use.
           </p>
         </Section>
 
@@ -150,7 +186,15 @@ export default function PrivacyPage() {
             <li>To generate and deliver your personalized newsletter by email and in-app.</li>
             <li>To process subscription payments and manage your plan.</li>
             <li>To authenticate you and keep your account secure.</li>
-            <li>To improve the Service based on aggregated, anonymized usage patterns.</li>
+            <li>
+              To improve the Service based on usage patterns, the optional answers you give us,
+              and reliability records, including reviewing individual records to investigate a
+              problem or a support request.
+            </li>
+            <li>
+              To understand our business, such as how many people sign up, which plans they
+              choose, and which topics are popular, using an internal reporting dashboard.
+            </li>
             <li>
               To send transactional emails (e.g., account confirmations, billing receipts).
               We do not send promotional or marketing emails beyond the newsletter you
@@ -205,9 +249,15 @@ export default function PrivacyPage() {
               for details.
             </li>
             <li>
-              <strong>Upstash (Redis)</strong> — rate limiting and short-lived request
-              caching. No personally identifiable information is stored long-term in this
-              layer.
+              <strong>Vercel</strong> — hosting for our website and servers. Vercel processes
+              request data such as your IP address and browser type to serve pages and keep
+              logs.
+            </li>
+            <li>
+              <strong>Upstash (Redis and QStash)</strong> — rate limiting, short-lived request
+              caching, and a job queue that schedules newsletter generation. The queue handles
+              internal newsletter identifiers, not your email content, and no personally
+              identifiable information is stored long-term in this layer.
             </li>
             <li>
               <strong>PostHog</strong> — product analytics when you accept cookies. We identify
@@ -231,21 +281,58 @@ export default function PrivacyPage() {
               <strong>Google OAuth</strong> — optional sign-in. Google provides your email (and
               name, if you share it) so we can create your account.
             </li>
+          </ul>
+          <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Content and data sources (no account identity sent)
+          </p>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            To write your newsletter we query outside sources using search terms taken from
+            your selections, for example a team name, a stock ticker, a city, or a topic. We
+            do not send your name, email address, or account identifier to these sources,
+            although they can see the technical request itself (such as our server&apos;s IP
+            address).
+          </p>
+          <ul className="mt-3 list-disc pl-5 text-sm leading-7 text-slate-600 dark:text-slate-300 space-y-2">
             <li>
-              <strong>WeatherAPI.com</strong> — city names you enter for weather sections.
+              <strong>GNews</strong> — news search and article text for your topics.
             </li>
             <li>
-              <strong>Finnhub</strong> — ticker symbols you select for stock quotes. We do not
-              send your identity to Finnhub.
+              <strong>Finnhub</strong> — stock prices for the ticker symbols you select.
             </li>
             <li>
-              <strong>NewsAPI</strong> — topic search terms used as a rescue source when RSS
-              feeds are thin.
+              <strong>WeatherAPI.com</strong> — weather for the city names you enter.
+            </li>
+            <li>
+              <strong>CoinGecko</strong> — cryptocurrency prices for the coins you select.
+            </li>
+            <li>
+              <strong>Sports data providers</strong> — balldontlie (NBA), CollegeFootballData.com
+              (college football), API-Sports (soccer), the NHL&apos;s public statistics service, and
+              other public sports data, queried by team name.
+            </li>
+            <li>
+              <strong>Public news feeds and publisher websites</strong> — we read public RSS
+              feeds and article pages from publishers, and Hacker News for technology stories.
             </li>
           </ul>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             We may also disclose information if required by law, court order, or to protect
             the rights, property, or safety of For You Newsletter, our users, or the public.
+          </p>
+        </Section>
+
+        <Section title="Who can see your information at For You Newsletter">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Access to the Service&apos;s data is limited to the people who run it. We use an
+            internal, access-controlled reporting dashboard that reads our database to show
+            business and reliability information, such as the number of accounts, how many are
+            on each plan, cancellations and the reasons people gave, which topics are popular,
+            how people said they heard about us, and which newsletters had errors or fell back
+            to a different news source. Some of those views show an individual account&apos;s
+            email address and the optional answers described above, for example so we can look
+            into a failed newsletter or reply to your feedback. We use this information only to
+            operate, support, secure, and improve the Service. We do not sell it, and we do not
+            use it to profile you for advertising.
           </p>
         </Section>
 
@@ -266,10 +353,18 @@ export default function PrivacyPage() {
         <Section title="5. Data Retention">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             We retain your account data and newsletter preferences for as long as your
-            account is active. If you delete your account, we will delete or anonymize your
-            personal data within a reasonable period, except where we are required to retain
-            records for legal or financial compliance purposes (e.g., Stripe transaction
-            records required for tax and accounting purposes).
+            account is active. You can delete your account yourself at any time from Settings.
+            When you do, we delete your profile, newsletters, and preferences. Records that are
+            kept for product, reliability, and feedback purposes (analytics events, your answers
+            to the &quot;why?&quot; questions, and service operations records) have the link to
+            your account removed, so they no longer identify you, although the text of an
+            answer you typed may remain. We may keep information where the law requires it
+            (for example, Stripe transaction records needed for tax and accounting) and in
+            routine backups for a limited time until they are overwritten.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Newsletter issues are kept for a period that depends on your plan, after which older
+            issues are removed.
           </p>
         </Section>
 
@@ -327,6 +422,46 @@ export default function PrivacyPage() {
             or share your personal information for cross-context behavioral advertising. To
             exercise any of these rights, contact us at the address below.
           </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Other U.S. States
+          </p>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Residents of states with comprehensive privacy laws (such as Virginia, Colorado,
+            Connecticut, Texas, Oregon, and others) have similar rights to access, correct,
+            delete, and obtain a copy of their personal data, and to opt out of targeted
+            advertising, sale, and certain profiling. We do not sell personal data, do not use
+            it for targeted advertising, and do not make automated decisions with legal or
+            similarly significant effects. If we decline a request you may appeal by replying to
+            our response, and you may contact your state attorney general.
+          </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            European Economic Area, United Kingdom, and Switzerland (GDPR)
+          </p>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            We are based in the United States. If you are in the EEA, UK, or Switzerland, we
+            process your personal data on these legal bases: to provide the Service you asked
+            for (contract) &mdash; account, newsletter generation and delivery, billing; our
+            legitimate interests in security, reliability, and improving the Service &mdash;
+            operations records, and the optional answers you choose to give; your consent
+            &mdash; analytics cookies and session recording, which you can withdraw at any time by
+            choosing Reject; and legal obligations &mdash; tax and accounting records.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            You have the right to access, correct, erase, restrict, and object to processing of
+            your personal data, to receive it in a portable format, to withdraw consent, and to
+            complain to your local data protection authority. Your data is processed in the
+            United States and other countries where our service providers operate; where
+            required we rely on safeguards such as the Standard Contractual Clauses and our
+            providers&apos; data processing terms.
+          </p>
+          <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Do Not Track and Global Privacy Control
+          </p>
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            We treat a Do Not Track signal or a Global Privacy Control signal from your browser
+            as a request to Reject analytics. Your newsletter content does not depend on
+            analytics.
+          </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             To exercise any privacy right, contact us at{" "}
             <a
@@ -342,9 +477,11 @@ export default function PrivacyPage() {
         <Section title="9. Children">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             The Service is not directed to children under the age of 13, and we do not
-            knowingly collect personal information from children under 13. If you believe
-            a child under 13 has provided us with personal information, please contact us
-            and we will promptly delete it.
+            knowingly collect personal information from children under 13. In some countries
+            the minimum age to consent to data processing is higher (up to 16); where that
+            applies, you must meet your country&apos;s minimum age to use the Service. If you
+            believe a child under 13 has provided us with personal information, please contact
+            us and we will promptly delete it.
           </p>
         </Section>
 

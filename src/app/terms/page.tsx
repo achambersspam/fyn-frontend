@@ -5,7 +5,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Terms of Use</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: October 14, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           These Terms of Use ("Terms") govern your access to and use of the For You
@@ -20,6 +20,20 @@ export default function TermsPage() {
             daily newsletters based on topics and preferences you select. Content is produced
             using large language models and draws from publicly available news and
             information. Newsletters are delivered by email and through the in-app reader.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>Emails.</strong> By creating an account you agree to receive the newsletters
+            you set up, and account and billing messages (such as receipts and trial or renewal
+            reminders). Newsletter emails may include sponsored content on the Free and Plus
+            plans and always include an unsubscribe link. You can unsubscribe or pause delivery
+            at any time; account and billing messages may still be sent while you have an
+            account or an active subscription.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>Changes to the Service.</strong> We are improving the Service continuously.
+            We may add, change, or remove features, topics, news and data sources, and plan
+            limits, and we may suspend the Service for maintenance. We do not guarantee that any
+            particular source, team, topic, or data point will always be available or timely.
           </p>
         </Section>
 
@@ -105,6 +119,31 @@ export default function TermsPage() {
             independently verify any information before acting on it. We are not liable for
             any decisions you make based on content delivered through the Service.
           </p>
+          <ul className="mt-3 list-disc pl-5 text-sm leading-7 text-slate-600 dark:text-slate-300 space-y-1">
+            <li>
+              <strong>Stocks, markets, and crypto.</strong> Prices, changes, and market
+              summaries may be delayed, incomplete, or wrong, and are shown as of the time
+              stated. Nothing in the Service is a recommendation to buy, sell, or hold any
+              security or digital asset, or investment, tax, or accounting advice. Investing
+              involves risk, including loss of principal. Cryptocurrency prices are especially
+              volatile.
+            </li>
+            <li>
+              <strong>Sports.</strong> Scores, schedules, and statistics may be late or
+              inaccurate and are for entertainment. They are not intended for, and must not be
+              relied on for, betting or wagering decisions.
+            </li>
+            <li>
+              <strong>Health and wellness.</strong> Health content is general information, not
+              medical advice, diagnosis, or treatment. See a qualified professional for
+              medical questions.
+            </li>
+            <li>
+              <strong>Weather.</strong> Forecasts are estimates and must not be relied on for
+              safety-critical decisions. Use official weather services and alerts for severe
+              weather.
+            </li>
+          </ul>
         </Section>
 
         <Section title="5. Third-Party Content and Links">
@@ -115,6 +154,26 @@ export default function TermsPage() {
             Links to third-party sites do not constitute an endorsement. Your interactions
             with third-party sites are governed by those sites' own terms and privacy
             policies.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>Data sources and attribution.</strong> Newsletters summarize reporting from
+            news publishers and use data from providers including GNews, Finnhub, WeatherAPI.com,
+            CoinGecko, balldontlie, CollegeFootballData.com, and public sports and news feeds. We
+            do not claim that this data is official, and we do not represent it as coming from
+            the NCAA, a league, a team, a school, or any other third party. The names and marks
+            of teams, leagues, companies, and publishers belong to their owners and are used only
+            to identify the subject of your newsletter; their use does not imply affiliation or
+            endorsement.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>Copyright concerns.</strong> We summarize third-party reporting in our own
+            words and link to the original. If you are a rights holder and believe content in the
+            Service infringes your copyright, email{" "}
+            <a href="mailto:hello@foryounewsletter.com" className="text-sky-600 hover:underline">
+              hello@foryounewsletter.com
+            </a>{" "}
+            with the subject &quot;Copyright&quot;, identify the work and where it appears, and
+            we will review it promptly and remove content where appropriate.
           </p>
         </Section>
 
@@ -167,6 +226,16 @@ export default function TermsPage() {
             commercial use of newsletter content without our written permission is not
             permitted.
           </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <strong>Feedback and community content.</strong> If you submit feedback, a feedback
+            board post, vote, or comment, or the optional answers we ask for when you cancel,
+            pause, or delete, you keep ownership of it and give us a non-exclusive, worldwide,
+            royalty-free licence to use, display, and act on it to run and improve the Service,
+            without obligation to you. Posts may be reviewed before they appear and may be
+            removed if they are unlawful, abusive, misleading, or off-topic. Do not post other
+            people&apos;s personal information, and do not include sensitive personal
+            information in free-text answers.
+          </p>
         </Section>
 
         <Section title="9. Indemnification">
@@ -203,6 +272,13 @@ export default function TermsPage() {
             OUR TOTAL CUMULATIVE LIABILITY TO YOU FOR ANY CLAIM ARISING OUT OF THESE TERMS
             OR THE SERVICE SHALL NOT EXCEED THE GREATER OF (A) THE TOTAL AMOUNT YOU PAID
             US IN THE THREE MONTHS PRECEDING THE CLAIM, OR (B) $10.00.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Some places do not allow certain limits or exclusions, so parts of this section may
+            not apply to you. Nothing in these Terms excludes or limits liability that cannot be
+            excluded by law, or removes any mandatory consumer rights you have where you live
+            (for example statutory rights to cancel, or to a remedy for a faulty digital
+            service).
           </p>
         </Section>
 

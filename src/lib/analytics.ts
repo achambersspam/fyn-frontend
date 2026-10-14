@@ -38,7 +38,10 @@ export const trackEvent = (
     }
   }
 
-  // Fire and forget. Never block user interaction on analytics transport.
+  // First-party product events are analytics too, so they follow the same
+  // choice as PostHog: nothing is recorded unless the user accepted analytics
+  // (and Do Not Track is off). Fire and forget; never block the user.
+  if (!isAnalyticsAllowed()) return;
   void api
     .post(
       "/api/analytics/event",

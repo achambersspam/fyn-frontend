@@ -5,7 +5,7 @@ export default function CookiesPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">Cookie Policy</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: September 20, 2026</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Last updated: October 14, 2026</p>
 
         <p className="mt-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
           This Cookie Policy explains how For You Newsletter uses cookies and similar
@@ -41,10 +41,34 @@ export default function CookiesPage() {
               description="Remembers whether you have chosen light or dark mode so your preference is restored on your next visit. This data stays in your browser and is never sent to our servers."
             />
             <StorageItem
-              name="Analytics (PostHog)"
+              name="Newsletter nicknames"
+              type="localStorage"
+              purpose="Functional"
+              description="Remembers the names you give your newsletters on this device. Stays in your browser."
+            />
+            <StorageItem
+              name="Onboarding hints"
+              type="localStorage / sessionStorage"
+              purpose="Functional"
+              description="Remembers which tips you have already seen so we do not show them again."
+            />
+            <StorageItem
+              name="Sign-in and setup progress"
+              type="sessionStorage"
+              purpose="Strictly necessary"
+              description="Holds short-lived state while you sign in (for example which sign-in method you used) and the answers you have entered while creating a newsletter, so a page refresh does not lose them. Cleared when you close the tab."
+            />
+            <StorageItem
+              name="Offline cache (service worker)"
+              type="Browser cache"
+              purpose="Functional"
+              description="The app can store its own pages and images in your browser so it loads faster and shows an offline screen when you have no connection. It does not store your newsletter content for tracking."
+            />
+            <StorageItem
+              name="Analytics (PostHog and our own event log)"
               type="Cookie / localStorage"
               purpose="Analytics"
-              description="If you Accept analytics, PostHog sets cookies and localStorage for page views, autocapture, and session recording. Your distinct ID is your account UUID. Reject means we never call posthog.init. A Do Not Track (DNT=1) browser setting is treated as Reject and the banner is not required."
+              description="If you Accept analytics, PostHog sets cookies and localStorage for page views, autocapture, and session recording, and we also record a limited set of the same product events in our own database. Your distinct ID is your account UUID. If you Reject, none of this runs: we never call posthog.init and we do not record these events. A Do Not Track (DNT=1) or Global Privacy Control browser signal is treated as Reject."
             />
             <StorageItem
               name="Cookie consent"
@@ -77,8 +101,12 @@ export default function CookiesPage() {
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             <strong>Accept / Reject:</strong> The cookie banner lets you Accept analytics
             (PostHog, including session recording) or Reject it. Error monitoring (Sentry)
-            stays on because it is necessary to operate the Service. DNT=1 is treated as
-            Reject.
+            stays on because it is necessary to operate the Service. A Do Not Track or Global
+            Privacy Control signal is treated as Reject. You can change your choice at any
+            time by clearing this site&apos;s data in your browser, which brings the banner back.
+            Answers you give when you cancel, pause, or delete (the optional &quot;why?&quot;
+            questions) are feedback you submit to us, not analytics, and are covered by our
+            Privacy Policy.
           </p>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             <strong>PostHog analytics opt-out:</strong> Choose Reject on the banner, enable{" "}

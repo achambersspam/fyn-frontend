@@ -8,10 +8,11 @@ export type CookieConsentValue = {
 
 const isBrowser = () => typeof window !== "undefined";
 
+// A Do Not Track or Global Privacy Control signal is treated as "Reject analytics".
 export const hasDoNotTrack = (): boolean => {
   if (!isBrowser()) return false;
-  const nav = window.navigator as Navigator & { msDoNotTrack?: string };
-  return nav.doNotTrack === "1" || nav.msDoNotTrack === "1";
+  const nav = window.navigator as Navigator & { msDoNotTrack?: string; globalPrivacyControl?: boolean };
+  return nav.doNotTrack === "1" || nav.msDoNotTrack === "1" || nav.globalPrivacyControl === true;
 };
 
 export const readCookieConsent = (): CookieConsentValue | null => {
