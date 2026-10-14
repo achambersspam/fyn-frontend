@@ -96,7 +96,7 @@ export default function LandingPage() {
               </h1>
               <p className="animate-fade-up delay-200 mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
                 Pick the topics and the exact details you care about. Every day our
-                pigeon delivers one clean, focused digest — to your inbox and your
+                pigeon delivers one clean, focused newsletter — to your inbox and your
                 dashboard. No noise, no filler.
               </p>
               <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">

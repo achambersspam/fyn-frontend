@@ -6,18 +6,16 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, AlertTriangle } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { errorMessage } from "@/lib/errorMessage";
+import ExitReasonModal from "@/components/ExitReasonModal";
+import {
+  formatExitReason,
+  submitExitFeedback,
+  type ExitSelection,
+} from "@/lib/exitReasons";
 import type {
   SubscriptionCancelResponse,
   SubscriptionInfo,
 } from "@/lib/apiContracts";
-
-const REASONS = [
-  "Too expensive",
-  "Not using it enough",
-  "Found an alternative",
-  "Missing features",
-  "Other",
-];
 
 function formatPeriodEnd(iso?: string | null): string | null {
   if (!iso) return null;
@@ -32,7 +30,7 @@ function formatPeriodEnd(iso?: string | null): string | null {
 
 export default function CancelSubscriptionPage() {
   const router = useRouter();
-  const [reason, setReason] = useState("");
+  const [showExitModal, setShowExitModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const actionInFlightRef = useRef(false);
   const [isResuming, setIsResuming] = useState(false);
@@ -77,8 +75,9 @@ export default function CancelSubscriptionPage() {
     };
   }, [router]);
 
-  const handleCancel = async () => {
+  const handleCancel = async (selection: ExitSelection) => {
     if (isCancelling || actionInFlightRef.current) return;
+    const reason = formatExitReason(selection);
     actionInFlightRef.current = true;
     setIsCancelling(true);
     setError(null);
@@ -88,13 +87,17 @@ export default function CancelSubscriptionPage() {
         reason ? { reason } : {}
       );
       if (payload.cancel_at_period_end !== true) {
+        setShowExitModal(false);
         setError("Cancellation did not complete. Please try again.");
         return;
       }
+      submitExitFeedback("cancel_subscription", selection);
       setPeriodEnd(formatPeriodEnd(payload.current_period_end) || periodEnd);
+      setShowExitModal(false);
       setCancelled(true);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
+      setShowExitModal(false);
       setError(errorMessage(apiErr, "Unable to cancel. Please try again."));
     } finally {
       actionInFlightRef.current = false;
@@ -253,26 +256,6 @@ export default function CancelSubscriptionPage() {
               </ul>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Optional: why are you cancelling?
-              </p>
-              {REASONS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setReason((current) => (current === r ? "" : r))}
-                  className={`w-full text-left p-4 rounded-2xl border-2 font-semibold transition-all ${
-                    reason === r
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-gray-200 text-gray-700 dark:border-slate-800 dark:text-gray-300"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
             <div className="flex gap-3">
               <button
                 onClick={() => router.push("/settings")}
@@ -281,15 +264,28 @@ export default function CancelSubscriptionPage() {
                 Keep subscription
               </button>
               <button
-                onClick={() => void handleCancel()}
+                onClick={() => setShowExitModal(true)}
                 disabled={isCancelling}
                 className="flex-1 rounded-xl bg-red-600 py-3 font-bold text-white hover:bg-red-700 transition-all disabled:opacity-60 active:scale-95"
               >
-                {isCancelling ? "Cancelling..." : "Confirm cancellation"}
+                Cancel subscription
               </button>
             </div>
           </div>
         )}
+
+        <ExitReasonModal
+          open={showExitModal}
+          kind="cancel_subscription"
+          title="Before you go: why are you cancelling?"
+          description="Your plan stays active until the end of your billing period."
+          confirmLabel="Confirm cancellation"
+          busyLabel="Cancelling..."
+          dismissLabel="Keep subscription"
+          busy={isCancelling}
+          onConfirm={(selection) => void handleCancel(selection)}
+          onClose={() => setShowExitModal(false)}
+        />
       </div>
     </div>
   );

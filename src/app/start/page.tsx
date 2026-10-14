@@ -12,7 +12,7 @@ export default function StartPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-center text-base leading-relaxed text-slate-600 dark:text-slate-300">
           Pick what you care about, tell us the specifics, and choose when it lands. No
-          generic digest — one newsletter built around you.
+          generic newsletter — just one built around you.
         </p>
         <ol className="mt-10 space-y-4">
           {[

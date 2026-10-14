@@ -6,12 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import ChooseActiveNewslettersModal from "@/components/ChooseActiveNewslettersModal";
+import ExitReasonModal from "@/components/ExitReasonModal";
 import Spinner from "@/components/Spinner";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import { ChevronLeft, Clock, Pause, Play } from "@/components/Icons";
 import { api, type ApiError } from "@/lib/api";
 import { TIER_LIMITS, type Newsletter, type Profile } from "@/lib/apiContracts";
 import { errorMessage } from "@/lib/errorMessage";
+import { submitExitFeedback, type ExitSelection } from "@/lib/exitReasons";
 import { newsletterName, orderNewsletters } from "@/lib/newsletterNames";
 import { getCurrentSession } from "@/lib/supabase";
 
@@ -24,6 +26,7 @@ export default function PauseDeliveryPage() {
   const [togglingPause, setTogglingPause] = useState<string | null>(null);
   const toggleInFlightRef = useRef(false);
   const [showChooseActive, setShowChooseActive] = useState(false);
+  const [pendingPause, setPendingPause] = useState<Newsletter | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,11 +60,20 @@ export default function PauseDeliveryPage() {
     };
   }, [router]);
 
-  const togglePause = async (nl: Newsletter) => {
+  const togglePause = (nl: Newsletter) => {
     if (nl.disabled) {
       setShowChooseActive(true);
       return;
     }
+    // Turning a newsletter OFF asks why first; turning it back on is instant.
+    if (!nl.paused) {
+      setPendingPause(nl);
+      return;
+    }
+    void applyPause(nl, null);
+  };
+
+  const applyPause = async (nl: Newsletter, selection: ExitSelection | null) => {
     if (toggleInFlightRef.current) return;
     toggleInFlightRef.current = true;
     setTogglingPause(nl.id);
@@ -72,7 +84,10 @@ export default function PauseDeliveryPage() {
     );
     try {
       await api.patch(`/api/newsletters/${nl.id}/pause`);
+      if (selection) submitExitFeedback("turn_off_newsletter", selection, nl.id);
+      setPendingPause(null);
     } catch (err) {
+      setPendingPause(null);
       setNewsletters((prev) =>
         prev.map((n) => (n.id === nl.id ? { ...n, paused: previousPaused } : n))
       );
@@ -217,6 +232,22 @@ export default function PauseDeliveryPage() {
         cap={cap}
         onClose={() => setShowChooseActive(false)}
         onSaved={setNewsletters}
+      />
+
+      <ExitReasonModal
+        open={pendingPause !== null}
+        kind="turn_off_newsletter"
+        title={`Pause ${pendingPause ? newsletterName(pendingPause.id, newsletters) : "this newsletter"}?`}
+        description="You won't receive it until you turn it back on. Nothing is deleted."
+        confirmLabel="Pause newsletter"
+        busyLabel="Pausing..."
+        dismissLabel="Keep it on"
+        danger={false}
+        busy={pendingPause !== null && togglingPause === pendingPause.id}
+        onConfirm={(selection) => {
+          if (pendingPause) void applyPause(pendingPause, selection);
+        }}
+        onClose={() => setPendingPause(null)}
       />
 
       <BottomNav />

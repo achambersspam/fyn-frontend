@@ -17,7 +17,7 @@ export default function TermsPage() {
         <Section title="1. The Service">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             For You Newsletter is an AI-powered newsletter service that generates personalized
-            daily digests based on topics and preferences you select. Content is produced
+            daily newsletters based on topics and preferences you select. Content is produced
             using large language models and draws from publicly available news and
             information. Newsletters are delivered by email and through the in-app reader.
           </p>

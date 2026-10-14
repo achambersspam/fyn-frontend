@@ -17,6 +17,8 @@ import type {
 import { TIER_LIMITS, type Tier } from "@/lib/apiContracts";
 import Tooltip, { TooltipWithAria } from "@/components/Tooltip";
 import UnsavedChangesModal from "@/components/UnsavedChangesModal";
+import ExitReasonModal from "@/components/ExitReasonModal";
+import { submitExitFeedback, type ExitSelection } from "@/lib/exitReasons";
 import {
   allocateByPriority,
   allocateSeconds,
@@ -525,13 +527,14 @@ export default function EditNewsletterPage() {
     }
   };
 
-  const handleDelete = useCallback(async () => {
+  const handleDelete = useCallback(async (selection: ExitSelection) => {
     if (!id || isDeleting || deleteInFlightRef.current) return;
     deleteInFlightRef.current = true;
     setIsDeleting(true);
     setError(null);
     try {
       await api.delete(`/api/newsletters/${id}`);
+      submitExitFeedback("turn_off_newsletter", selection, id, false);
       router.push("/newsletter");
     } catch (err: unknown) {
       const message = errorMessage(err, "Failed to delete newsletter.");
@@ -958,36 +961,18 @@ export default function EditNewsletterPage() {
         </Tooltip>
       </div>
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 space-y-4">
-            <h3 className="text-lg font-black text-gray-900 dark:text-gray-100">
-              Delete Newsletter
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              This action is not reversible. Deleting this newsletter will permanently remove it.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 transition-all hover:bg-gray-50 disabled:opacity-60 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-60"
-              >
-                {isDeleting ? "Deleting..." : "Delete Newsletter"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExitReasonModal
+        open={showDeleteConfirm}
+        kind="turn_off_newsletter"
+        title="Delete this newsletter?"
+        description="This action is not reversible. Deleting this newsletter will permanently remove it."
+        confirmLabel="Delete Newsletter"
+        busyLabel="Deleting..."
+        dismissLabel="Cancel"
+        busy={isDeleting}
+        onConfirm={(selection) => void handleDelete(selection)}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
 
       {showInvalidLeaveWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     default: "For You Newsletter",
     template: "%s | For You Newsletter",
   },
-  description: "Choose the topics and details you care about. Get one clean, focused daily digest in your inbox and your dashboard.",
+  description: "Choose the topics and details you care about. Get one clean, focused daily newsletter in your inbox and your dashboard.",
   icons: {
     icon: "/pigeon-filled.svg",
     apple: "/pigeon-filled.svg",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "For You Newsletter",
     title: "For You Newsletter",
-    description: "Choose the topics and details you care about. Get one clean, focused daily digest in your inbox and your dashboard.",
+    description: "Choose the topics and details you care about. Get one clean, focused daily newsletter in your inbox and your dashboard.",
     images: [
       {
         url: "/newsletter-header-logo.png",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "For You Newsletter",
-    description: "Choose the topics and details you care about. Get one clean, focused daily digest in your inbox and your dashboard.",
+    description: "Choose the topics and details you care about. Get one clean, focused daily newsletter in your inbox and your dashboard.",
     images: ["/newsletter-header-logo.png"],
   },
   alternates: {
