@@ -6,9 +6,7 @@ import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
-import ScrollInbox from "@/components/ScrollInbox";
 import SourceLogoMarquee from "@/components/SourceLogoMarquee";
-import SampleIssuePreview from "@/components/SampleIssuePreview";
 
 export default function LandingPage() {
   const [settingsHref, setSettingsHref] = useState("/auth?mode=signin");
@@ -95,9 +93,8 @@ export default function LandingPage() {
                 <span className="text-gradient-brand">actually for you.</span>
               </h1>
               <p className="animate-fade-up delay-200 mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
-                Pick the topics and the exact details you care about. Every day our
-                pigeon delivers one clean, focused newsletter — to your inbox and your
-                dashboard. No noise, no filler.
+                Follow our quick and easy 3 step process to create your very own
+                personalized newsletter with only the topics and stories you care about
               </p>
               <div className="animate-fade-up delay-300 mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
                 <Link href="/start" className="btn-premium">
@@ -144,13 +141,12 @@ export default function LandingPage() {
           <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div className="order-2 text-center lg:order-1 lg:text-left">
               <h2 data-reveal className="text-4xl font-black leading-tight text-slate-900 dark:text-white sm:text-5xl">
-                News around the world,{" "}
-                <span className="text-gradient-brand">for you.</span>
+                Bringing you news from the sources{" "}
+                <span className="text-gradient-brand">around the world</span>
               </h2>
               <p data-reveal className="reveal-delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
-                Your teams, your cities, your coins — wherever they are on the
-                map. One personalized briefing, delivered daily, built from
-                verified sources around the globe.
+                Whether you want German Soccer, News or Asian stock market updates -
+                For You Newsletter has it!
               </p>
               <Link
                 data-reveal
@@ -169,7 +165,7 @@ export default function LandingPage() {
         {/* ================= TRUSTED SOURCES MARQUEE ================= */}
         <section className="border-y border-slate-100 bg-white py-10 dark:border-slate-900 dark:bg-slate-950">
           <p data-reveal className="mb-5 text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-            Grounded in real reporting from
+            Pulling from the top news outlets
           </p>
           <SourceLogoMarquee />
         </section>
@@ -177,7 +173,7 @@ export default function LandingPage() {
         {/* ================= HOW IT WORKS ================= */}
         <section id="how-it-works" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
           <h2 data-reveal className="text-center text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-            How It Works
+            How the 3 Step Process Works:
           </h2>
           <div data-reveal className="reveal-delay-100 mt-8 grid gap-5 md:grid-cols-3">
             {[
@@ -186,7 +182,7 @@ export default function LandingPage() {
                 "2",
                 "Add details that make it yours",
                 "Pick subtopics, symbols, teams, cities, and preference presets.",
-                "/logo-pigeon-instructions-details.svg",
+                null,
               ],
               ["3", "Receive in app and email", "Read from your dashboard and get the same issue in your inbox.", null],
             ].map(([step, title, body, image]) => (
@@ -212,37 +208,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= SAMPLE ISSUE PREVIEW ================= */}
-        <section id="preview" className="scroll-mt-20 border-y border-slate-100 bg-slate-50 py-16 dark:border-slate-900 dark:bg-slate-950/60">
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div className="text-center lg:text-left">
-              <h2 data-reveal className="text-3xl font-black text-slate-900 dark:text-slate-100 sm:text-4xl">
-                See what lands in your inbox.
-              </h2>
-              <p data-reveal className="reveal-delay-100 mx-auto mt-4 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-300 lg:mx-0">
-                One clean issue with only your sections — your tickers with
-                honest market notes, your team&apos;s actual score, your
-                cities&apos; forecasts. Nothing you didn&apos;t ask for.
-              </p>
-              <Link
-                data-reveal
-                href="/start"
-                className="reveal-delay-200 btn-premium mt-7 inline-flex"
-              >
-                Get Started — it&apos;s free
-              </Link>
-            </div>
-            <div data-reveal className="reveal-delay-100">
-              <SampleIssuePreview />
-            </div>
-          </div>
-        </section>
-
-        {/* ================= SCROLL-DRIVEN INBOX OPENING ================= */}
-        <section className="relative bg-white dark:bg-slate-950">
-          <ScrollInbox />
-        </section>
-
         {/* ================= CLOSING CTA ================= */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
           <div data-reveal className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark px-8 py-14 text-center shadow-2xl shadow-primary/25">
@@ -252,18 +217,7 @@ export default function LandingPage() {
               src="/pigeon-outline.svg"
               alt=""
               aria-hidden
-              className="animate-float-a absolute left-[10%] top-6 h-10 w-10 opacity-80"
-            />
-            <video
-              src="/pigeon-wave.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="none"
-              poster="/pigeon-filled.svg"
-              aria-hidden
-              className="relative z-10 mx-auto mb-5 h-20 w-20 rounded-2xl object-cover drop-shadow-lg"
+              className="relative z-10 mx-auto mb-5 h-20 w-20"
             />
             <h2 className="relative text-3xl font-black text-white sm:text-4xl">
               Your newsletter is waiting.
