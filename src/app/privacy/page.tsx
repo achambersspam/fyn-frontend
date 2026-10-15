@@ -51,6 +51,13 @@ export default function PrivacyPage() {
           <Subsection title="Account information">
             When you create an account, we collect your email address and any display name
             you provide. This is used to authenticate you and deliver your newsletter.
+            You can sign in with email and password, with Google, or (in the iOS app) with
+            Apple. If you use Google or Apple we receive the email address and name your
+            provider shares with us (with Apple you may choose to hide your real email, in
+            which case we get Apple&apos;s private relay address and newsletters are
+            delivered through it). We never receive your Google or Apple password. Passwords
+            for email sign-in are stored only as salted hashes by our authentication
+            provider (Supabase).
           </Subsection>
           <Subsection title="Newsletter preferences">
             We store the topics, subtopics, and customization settings you choose so we can
@@ -300,6 +307,16 @@ export default function PrivacyPage() {
               <strong>Finnhub</strong> — stock prices for the ticker symbols you select.
             </li>
             <li>
+              <strong>Yahoo Finance (public chart data)</strong> — backup stock prices and
+              company names for the ticker symbols you select. Only the ticker symbol is
+              sent; no information about you.
+            </li>
+            <li>
+              <strong>Apple (Sign in with Apple)</strong> and <strong>Google (Google
+              Sign-In)</strong> — only if you choose to sign in with them; they tell us your
+              verified email and name.
+            </li>
+            <li>
               <strong>WeatherAPI.com</strong> — weather for the city names you enter.
             </li>
             <li>
@@ -471,6 +488,27 @@ export default function PrivacyPage() {
               hello@foryounewsletter.com
             </a>
             . We will respond within 45 days.
+          </p>
+        </Section>
+
+        <Section title="Data breaches">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            If a security incident affects your personal information, we will investigate
+            promptly, take steps to contain it, and notify affected users and regulators
+            where the law requires, without undue delay (and within 72 hours of becoming
+            aware where GDPR applies to a regulator notification).
+          </p>
+        </Section>
+
+        <Section title="Automated processing and AI">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Your newsletter is written by an AI model (OpenAI) from public news and data
+            sources and the topics you chose. We do not use AI to make decisions that have
+            legal or similarly significant effects on you (such as pricing, eligibility or
+            account termination). We do not use your newsletter content or your account
+            data to train AI models, and we ask our AI provider not to train on it. The
+            topics you choose are sent to the AI provider with the source text so it can
+            write your newsletter; your name and email are not.
           </p>
         </Section>
 

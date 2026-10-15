@@ -6,7 +6,7 @@ import { getCurrentSession } from "@/lib/supabase";
 import PublicSiteNav from "@/components/PublicSiteNav";
 import PublicSiteFooter from "@/components/PublicSiteFooter";
 import RotatingGlobe from "@/components/RotatingGlobe";
-import ScrollScrubVideo from "@/components/ScrollScrubVideo";
+import ScrollInbox from "@/components/ScrollInbox";
 import SourceLogoMarquee from "@/components/SourceLogoMarquee";
 import SampleIssuePreview from "@/components/SampleIssuePreview";
 
@@ -238,15 +238,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= SCROLL-SCRUBBED MAILBOX ANIMATION ================= */}
-        <section className="relative overflow-hidden bg-white dark:bg-slate-950">
-          <ScrollScrubVideo src="/mailbox-pigeon.mp4">
-            <div className="text-center">
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white sm:text-4xl">
-                Your pigeon is on the way.
-              </h2>
-            </div>
-          </ScrollScrubVideo>
+        {/* ================= SCROLL-DRIVEN INBOX OPENING ================= */}
+        <section className="relative bg-white dark:bg-slate-950">
+          <ScrollInbox />
         </section>
 
         {/* ================= CLOSING CTA ================= */}

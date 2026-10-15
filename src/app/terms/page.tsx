@@ -146,6 +146,50 @@ export default function TermsPage() {
           </ul>
         </Section>
 
+        <Section title="Market, sports and weather data">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Stock, crypto, sports and weather figures come from third-party providers and
+            public sources. They can be delayed, incomplete, revised or wrong. Prices shown
+            for stocks are the most recent close or a delayed quote and are for general
+            information only. They are not offers to buy or sell, not investment, tax or
+            betting advice, and must not be used to trade. Always check a primary source
+            before acting. We are not responsible for losses that result from relying on
+            them.
+          </p>
+        </Section>
+
+        <Section title="Sign-in providers and app stores">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            If you sign in with Google or Apple, those companies&apos; own terms and privacy
+            policies apply to that sign-in. If you use our iOS app, Apple is not a party to
+            these Terms, is not responsible for the app or its support, and is a third-party
+            beneficiary of these Terms for your use of the iOS app. Subscriptions you start
+            on our website are billed by us through Stripe; if a subscription is ever offered
+            through an app store, that store&apos;s billing terms will also apply and will be
+            shown before you buy.
+          </p>
+        </Section>
+
+        <Section title="Automatic renewal summary">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            Paid plans renew automatically every 4 weeks at the price shown at checkout
+            until you cancel. Cancel any time in Settings or the billing portal; you keep
+            access until the end of the period you paid for. If you start a free trial, the
+            first charge happens when the trial ends unless you cancel before then, and we
+            email a reminder beforehand. If we change the price, we will tell you before the
+            change applies to your next renewal, and you can cancel before it takes effect.
+          </p>
+        </Section>
+
+        <Section title="Eligibility">
+          <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            You must be at least 13 years old to use the Service (16 where your country sets
+            a higher age of digital consent), and old enough to form a binding contract to
+            buy a paid plan. You may not use the Service if you are barred from receiving
+            services under applicable export or sanctions laws.
+          </p>
+        </Section>
+
         <Section title="5. Third-Party Content and Links">
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Your newsletter may reference or link to third-party news articles, websites,
