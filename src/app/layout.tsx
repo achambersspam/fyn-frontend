@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     description: "Choose the topics and details you care about. Get one clean, focused daily newsletter in your inbox and your dashboard.",
     images: [
       {
-        url: "/newsletter-header-logo.png",
+        url: "/newsletter-header.png",
         width: 1200,
         height: 630,
         alt: "For You Newsletter",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "For You Newsletter",
     description: "Choose the topics and details you care about. Get one clean, focused daily newsletter in your inbox and your dashboard.",
-    images: ["/newsletter-header-logo.png"],
+    images: ["/newsletter-header.png"],
   },
   alternates: {
     canonical: SITE_URL,

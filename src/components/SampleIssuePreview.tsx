@@ -62,12 +62,12 @@ export function SampleIssueBody() {
   return (
     <div style={{ fontFamily: FONT, background: "#eef2f8", padding: "14px 12px" }}>
       <div style={{ background: "#fff", border: "1px solid #e2e8f2", borderRadius: 16, overflow: "hidden" }}>
-        {/* Header banner (the real newsletter-header-logo) */}
+        {/* Header banner (the real newsletter header) */}
         <div style={{ padding: "14px 24px 0 24px" }}>
           <img
-            src="/newsletter-header-logo.png"
+            src="/newsletter-header.png"
             alt="For You Newsletter — your personalized briefing"
-            style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }}
+            style={{ display: "block", width: "100%", maxWidth: 340, height: "auto", margin: "0 auto" }}
           />
           <p style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: "#64748b", margin: "10px 0 12px 0" }}>
             Thursday, October 15, 2026

@@ -214,10 +214,10 @@ export default function LandingPage() {
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
             <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
             <img
-              src="/pigeon-outline.svg"
+              src="/pigeon-filled.svg"
               alt=""
               aria-hidden
-              className="relative z-10 mx-auto mb-5 h-20 w-20"
+              className="relative z-10 mx-auto mb-5 h-20 w-20 brightness-0 invert"
             />
             <h2 className="relative text-3xl font-black text-white sm:text-4xl">
               Your newsletter is waiting.
