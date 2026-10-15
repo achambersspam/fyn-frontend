@@ -312,6 +312,11 @@ export default function PrivacyPage() {
               sent; no information about you.
             </li>
             <li>
+              <strong>Wikipedia (MediaWiki API)</strong> — the public list of films and their
+              release dates and box-office totals, used for movie topics. Nothing about you is
+              sent. Wikipedia text is available under the CC BY-SA licence.
+            </li>
+            <li>
               <strong>Apple (Sign in with Apple)</strong> and <strong>Google (Google
               Sign-In)</strong> — only if you choose to sign in with them; they tell us your
               verified email and name.
