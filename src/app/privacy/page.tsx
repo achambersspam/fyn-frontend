@@ -66,7 +66,7 @@ export default function PrivacyPage() {
           </Subsection>
           <Subsection title="How you heard about us">
             While your first newsletter is being created we ask how you found us. If you
-            answer, we store your choice (and any text you type under &quot;Other&quot;) on your
+            answer, we store your choice (and any details you type, such as a creator or friend&apos;s name) on your
             profile. It is optional and is used only to understand which channels work.
           </Subsection>
           <Subsection title="Feedback you give us when you leave">

@@ -156,7 +156,10 @@ export default function AuthPage() {
           onboarding_complete: profile.onboarding_complete,
         });
         if (!profile.onboarding_complete) {
-          router.replace("/setup");
+          // The founder goes straight to the master dashboard instead of being
+          // made to build a newsletter first (the API says false for everyone else).
+          const founder = await api.get<{ is_founder: boolean }>("/api/admin/me").catch(() => null);
+          router.replace(founder?.is_founder ? "/admin" : "/setup");
         }
       } catch {
         identifyUser(session.user.id, {});

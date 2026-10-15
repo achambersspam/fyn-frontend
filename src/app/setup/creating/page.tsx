@@ -542,21 +542,23 @@ function CreatingNewsletterContent() {
     isRunning
   );
 
-  const saveReferral = async () => {
-    if (!referralSource.trim() || referralSaveInFlightRef.current) {
+  // Saves the choice (and any details typed). Called right when an option is
+  // picked, so the choice is kept even if the person never writes details.
+  const saveReferral = async (source: string = referralSource, details: string = referralOther, final = true) => {
+    if (!source.trim() || (!final && referralSaveInFlightRef.current)) {
       return;
     }
     referralSaveInFlightRef.current = true;
     setIsSavingReferral(true);
     try {
       await api.patch("/api/me", {
-        referral_source: referralSource,
-        referral_other: referralSource === "other" ? referralOther : "",
+        referral_source: source,
+        referral_other: details.trim(),
       });
       void trackEvent("setup_referral_captured", {
-        referral_source: referralSource,
+        referral_source: source,
       });
-      setReferralSaved(true);
+      if (final) setReferralSaved(true);
     } catch {
       // Non-blocking for launch flow.
     } finally {
@@ -635,7 +637,11 @@ function CreatingNewsletterContent() {
               </p>
               <select
                 value={referralSource}
-                onChange={(e) => setReferralSource(e.target.value)}
+                onChange={(e) => {
+                  setReferralSource(e.target.value);
+                  setReferralOther("");
+                  void saveReferral(e.target.value, "", false);
+                }}
                 disabled={referralSaved}
                 className="input-field disabled:cursor-not-allowed disabled:opacity-70"
               >
@@ -646,15 +652,17 @@ function CreatingNewsletterContent() {
                 <option value="friend_referral">Friend Referral</option>
                 <option value="other">Other</option>
               </select>
-              {referralSource === "other" && (
+              {referralSource && REFERRAL_DETAIL_PROMPTS[referralSource] ? (
                 <input
                   value={referralOther}
                   onChange={(e) => setReferralOther(e.target.value)}
                   disabled={referralSaved}
+                  maxLength={200}
                   className="input-field disabled:cursor-not-allowed disabled:opacity-70"
-                  placeholder="Tell us where"
+                  placeholder={REFERRAL_DETAIL_PROMPTS[referralSource]}
+                  aria-label={REFERRAL_DETAIL_PROMPTS[referralSource]}
                 />
-              )}
+              ) : null}
               {referralSaved && (
                 <p className="text-sm font-semibold text-green-600 dark:text-green-400">
                   Thank you!
@@ -663,13 +671,8 @@ function CreatingNewsletterContent() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={saveReferral}
-                  disabled={
-                    isSavingReferral ||
-                    referralSaved ||
-                    !referralSource.trim() ||
-                    (referralSource === "other" && !referralOther.trim())
-                  }
+                  onClick={() => void saveReferral()}
+                  disabled={isSavingReferral || referralSaved || !referralSource.trim()}
                   className="btn-primary flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSavingReferral ? "Saving..." : referralSaved ? "Saved" : "Save"}
@@ -702,6 +705,14 @@ function CreatingNewsletterContent() {
     </div>
   );
 }
+
+const REFERRAL_DETAIL_PROMPTS: Record<string, string> = {
+  instagram: "What creator did you see us posting about?",
+  tiktok: "What creator did you see us posting about?",
+  linkedin: "Whose post or page did you see us on?",
+  friend_referral: "Want to share their name?",
+  other: "Tell us where you heard about us",
+};
 
 export default function CreatingNewsletterPage() {
   return (

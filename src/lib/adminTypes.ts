@@ -61,7 +61,7 @@ export type AdminOverview = {
     answered: number;
     answeredRate: number;
     bySource: Array<{ source: string; count: number }>;
-    otherAnswers: Array<{ at: string; email: string; text: string }>;
+    otherAnswers: Array<{ at: string; email: string; source: string; text: string }>;
   };
   health: { last24h: EventCounts; last7d: EventCounts; last30d: EventCounts };
   other: {
@@ -100,10 +100,15 @@ export const EVENT_TYPE_INFO: Record<string, { label: string; help: string }> = 
   story_layer_error: { label: "Source errors", help: "An unexpected error while fetching news." },
   no_coverage: { label: "No-coverage notes", help: 'The reader saw "unable to get any coverage" for a topic.' },
   topic_error: { label: "Topic errors", help: "A topic failed while generating." },
+  ai_failure: {
+    label: "AI writer down",
+    help: "OpenAI rejected the request (bad key, no credits or rate limit), so sections were skipped. Fix this first.",
+  },
   issue_failed: { label: "Failed newsletters", help: "A whole newsletter issue failed to generate." },
 };
 
 export const EVENT_TYPE_ORDER = [
+  "ai_failure",
   "issue_failed",
   "topic_error",
   "story_layer_error",

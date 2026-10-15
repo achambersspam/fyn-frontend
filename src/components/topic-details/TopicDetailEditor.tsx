@@ -15,6 +15,8 @@ const STOCK_THEME_MAX = 3;
 const WEATHER_MAX_LOCATIONS = 3;
 const PER_SPORT_TEAM_LIMIT = 3;
 const GENERAL_SPORTS_NEWS = "General Sports News";
+// Stored value stays "General Sports News"; readers see "Major Sports News".
+const sportChipLabel = (sport: string) => (sport === GENERAL_SPORTS_NEWS ? "Major Sports News" : sport);
 const GOLF_SELECTION_LIMIT = 3;
 const TOPIC_SUBTEXT: Record<string, string> = {
   "Tech & AI": "Get news on articles about these topics below",
@@ -1194,17 +1196,11 @@ export default function TopicDetailEditor({
                 onClick={() => toggleSport(sport)}
                 className={chipClass(enabled.includes(sport))}
               >
-                {sport}
+                {sportChipLabel(sport)}
               </button>
             )
           )}
         </div>
-        {enabled.includes(GENERAL_SPORTS_NEWS) ? (
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-            General Sports News: the top 1-4 men&apos;s stories of the day across the NFL, NBA, MLB, NHL
-            and major European soccer, depending on the time you give Sports.
-          </p>
-        ) : null}
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
           Total selected teams/topics: {selectedPlayerCount}/{sportsCap}
         </p>

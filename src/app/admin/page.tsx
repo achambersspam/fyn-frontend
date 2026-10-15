@@ -357,7 +357,7 @@ export default function AdminDashboardPage() {
                 {EVENT_TYPE_ORDER.map((type) => {
                   const count = counts[type] || 0;
                   const info = EVENT_TYPE_INFO[type];
-                  const severe = type === "issue_failed" || type === "topic_error" || type === "story_layer_error";
+                  const severe = type === "ai_failure" || type === "issue_failed" || type === "topic_error" || type === "story_layer_error";
                   return (
                     <li key={type}>
                       <button
@@ -418,10 +418,11 @@ export default function AdminDashboardPage() {
                 <BarList color={GREEN} rows={data.referrals.bySource.map((r) => ({ label: r.source, value: r.count }))} />
                 {data.referrals.otherAnswers.length > 0 ? (
                   <div className="mt-4">
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">&quot;Other&quot; answers, in their words</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Details they typed, in their words</p>
                     <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
                       {data.referrals.otherAnswers.map((a, i) => (
                         <li key={i} className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-slate-950">
+                          <span className="mr-2 rounded bg-green-100 px-1.5 py-0.5 text-[11px] font-bold text-green-700 dark:bg-green-900/40 dark:text-green-300">{a.source}</span>
                           <span className="text-gray-800 dark:text-gray-200">{a.text}</span>
                           <span className="ml-2 text-xs text-gray-400">{a.email}</span>
                         </li>
