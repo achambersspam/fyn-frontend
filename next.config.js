@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
-const BACKEND_API_ORIGIN =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:3001";
-
 const isDev = process.env.NODE_ENV !== "production";
+
+// Where /api/* is proxied (email unsubscribe + tracking links use the site domain).
+// Production must never fall back to localhost: that proxied every /api request on
+// foryounewsletter.com to a private address (404), breaking one-click unsubscribe.
+const BACKEND_API_ORIGIN = (
+  process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (isDev ? "http://localhost:3001" : "https://the-final-fyn-backend.vercel.app")
+).replace(/\/+$/, "");
 
 // Origins the browser legitimately talks to. Supabase (auth + REST), the
 // backend API, and PostHog/Sentry telemetry. Dev additionally allows the
